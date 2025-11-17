@@ -1,0 +1,70 @@
+{
+  "name": "HB Termoimpianti",
+  "short_name": "HB Impianti",
+  "description": "Applicazione gestionale per HB Termoimpianti - Clienti, Interventi, Preventivi",
+  "start_url": "/Hb_home.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#58a6ff",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "it",
+  "icons": [
+    {
+      "src": "img/logo.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/logo.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/logo.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Visualizza statistiche e grafici",
+      "url": "/Hb_home.html#dashboard",
+      "icons": [
+        {
+          "src": "img/logo.ico",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Clienti",
+      "short_name": "Clienti",
+      "description": "Gestione clienti",
+      "url": "/Hb_home.html#clienti",
+      "icons": [
+        {
+          "src": "img/logo.ico",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Interventi",
+      "short_name": "Interventi",
+      "description": "Registra nuovo intervento",
+      "url": "/Hb_home.html#interventi",
+      "icons": [
+        {
+          "src": "img/logo.ico",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

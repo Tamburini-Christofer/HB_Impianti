@@ -52,6 +52,42 @@
 - "Ripristina Dati" per importare backup
 - Fare backup regolari!
 
+📥 MODALITÀ DI RIPRISTINO:
+- UNISCI: Aggiunge i dati del backup a quelli esistenti
+  * Utile per sincronizzare dispositivi diversi
+  * Mantiene i dati attuali e aggiunge i nuovi
+  * Gli ID vengono rinumerati automaticamente
+  * ✅ RILEVA E SALTA I DUPLICATI automaticamente:
+    - Clienti: stesso nome + cognome + telefono
+    - Materiali: stessa descrizione + prezzo
+    - Interventi: stesso cliente + data + descrizione
+    - Preventivi: stesso numero o cliente + data
+    - Fatture: stesso numero fattura
+    - Appuntamenti: stesso cliente + data + ora
+  * Mostra statistiche: quanti aggiunti e quanti saltati
+- SOVRASCRIVI: Sostituisce completamente i dati
+  * Attenzione: Cancella tutti i dati esistenti!
+  * Utile per ripristinare backup completo
+
+💡 ESEMPIO USO MULTI-DISPOSITIVO:
+1. PC Ufficio: Gestione clienti e preventivi
+2. Fine giornata: Backup → Salva su cloud
+3. Tablet Tecnico: Ripristina → UNISCI
+4. Tecnico registra interventi sul campo
+5. Fine interventi: Backup dal tablet
+6. PC Ufficio: Ripristina → UNISCI
+7. Ora hai tutti i dati sincronizzati!
+
+🔒 PROTEZIONE DATI CON PASSWORD:
+- Pulsante "Blocca" nel footer per criptare i dati
+- Crittografia AES-256 con algoritmo PBKDF2
+- Password minima 4 caratteri (consigliato 8+)
+- ATTENZIONE: Password dimenticata = dati irrecuperabili!
+- Auto-lock dopo 30 minuti di inattività
+- Pulsante "Sblocca" per decriptare con password
+- Tutti i dati vengono criptati localmente
+- Nessun dato viene inviato a server esterni
+
 📊 LIMITI TECNICI:
 - Chrome/Edge: Massimo ~10MB di dati
 - Firefox: Massimo ~10MB di dati

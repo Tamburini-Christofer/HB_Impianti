@@ -1,0 +1,203 @@
+===============================================
+    SISTEMA DI CRITTOGRAFIA E SICUREZZA
+       HB TERMOIMPIANTI - DOCUMENTAZIONE
+===============================================
+
+🔐 PANORAMICA:
+Il sistema implementa crittografia end-to-end dei dati sensibili
+memorizzati nel localStorage del browser, utilizzando standard
+crittografici moderni e sicuri.
+
+📋 CARATTERISTICHE TECNICHE:
+
+1. ALGORITMO DI CRITTOGRAFIA:
+   - Standard: AES-GCM (Advanced Encryption Standard - Galois/Counter Mode)
+   - Lunghezza chiave: 256 bit
+   - Initialization Vector (IV): 12 byte casuali per ogni operazione
+   - Autenticazione: Integrata tramite GCM (protezione da manomissioni)
+
+2. DERIVAZIONE CHIAVE:
+   - Algoritmo: PBKDF2 (Password-Based Key Derivation Function 2)
+   - Hash: SHA-256
+   - Iterazioni: 100.000 (bilanciamento sicurezza/performance)
+   - Salt: 16 byte casuali generati con crypto.getRandomValues()
+   - Scopo: Trasforma password utente in chiave crittografica sicura
+
+3. STORAGE:
+   - Dati criptati: localStorage in formato Base64
+   - Salt: Salvato separatamente per permettere derivazione chiave
+   - Chiave: Mai salvata, solo in memoria durante sessione attiva
+   - Stato: Flag 'app_locked' indica se dati sono criptati
+
+🔄 FLUSSO DI FUNZIONAMENTO:
+
+BLOCCO (Crittografia):
+1. Utente inserisce password (min 4 caratteri, consigliato 8+)
+2. Sistema genera salt casuale (16 byte)
+3. Password + salt → PBKDF2 → Chiave AES-256
+4. Tutti i dati vengono serializzati in JSON
+5. JSON + Chiave → AES-GCM → Dati criptati
+6. IV + Dati criptati vengono salvati in Base64
+7. Dati in chiaro vengono eliminati dal localStorage
+8. Flag 'app_locked' settato a true
+
+SBLOCCO (Decrittografia):
+1. Utente inserisce password
+2. Sistema recupera salt salvato
+3. Password + salt → PBKDF2 → Chiave AES-256
+4. Dati criptati + Chiave → AES-GCM → JSON decriptato
+5. Se password errata: Eccezione e messaggio errore
+6. Se corretta: Dati ripristinati in localStorage
+7. Dati criptati e salt eliminati
+8. Flag 'app_locked' rimosso
+
+⚡ AUTO-LOCK:
+- Timer inattività: 30 minuti configurabili
+- Eventi monitorati: click, keypress, mousemove, touchstart
+- Azione: Prompt conferma blocco automatico
+- Reset: Ogni attività utente resetta il timer
+
+🛡️ SICUREZZA:
+
+PUNTI DI FORZA:
+✅ Crittografia end-to-end: Solo utente ha accesso
+✅ AES-256: Standard militare, praticamente inviolabile
+✅ PBKDF2 con 100k iterazioni: Resistente a brute-force
+✅ Salt casuale: Ogni installazione unica
+✅ IV casuale: Ogni crittografia diversa (no pattern)
+✅ GCM: Autenticazione integrata (anti-manomissione)
+✅ Chiave in memoria: Mai salvata su disco
+✅ Web Crypto API: Implementazione nativa browser
+
+LIMITAZIONI:
+⚠️ Password dimenticata = Dati irrecuperabili (no backdoor)
+⚠️ Sicurezza dipende da robustezza password
+⚠️ Vulnerabile a keylogger/malware sul dispositivo
+⚠️ localStorage accessibile da JavaScript (XSS risk)
+⚠️ Browser vulnerabile = dati compromessi
+⚠️ Auto-lock richiede finestra browser aperta
+
+💡 BEST PRACTICES PER L'UTENTE:
+
+1. PASSWORD FORTE:
+   - Minimo 8 caratteri (12+ consigliato)
+   - Mix maiuscole, minuscole, numeri, simboli
+   - Non usare password comuni o personali
+   - Es: "Hb!T3rm0_2025#Sicur0"
+
+2. GESTIONE PASSWORD:
+   - Usare password manager affidabile
+   - Non condividere con altri
+   - Cambiare periodicamente
+   - Non scrivere su carta/file non protetti
+
+3. BACKUP:
+   - Fare backup PRIMA di bloccare
+   - Backup contengono dati in chiaro
+   - Proteggere file backup adeguatamente
+   - Testare ripristino backup periodicamente
+
+4. SICUREZZA GENERALE:
+   - Usare HTTPS sempre
+   - Browser aggiornato e sicuro
+   - Antivirus/antimalware attivo
+   - Non usare su computer pubblici
+   - Logout/blocco quando non in uso
+
+🔧 CONFIGURAZIONE AVANZATA:
+
+Per modificare parametri di sicurezza in app.js:
+
+// Tempo auto-lock (in minuti)
+const AUTO_LOCK_MINUTES = 30;
+
+// Iterazioni PBKDF2 (in deriveKey function)
+iterations: 100000  // Aumentare per più sicurezza (più lento)
+
+// Lunghezza salt (in deriveKey function)
+const salt = crypto.getRandomValues(new Uint8Array(16)); // 16 byte
+
+// Password minima (in lockApp function)
+if (!password || password.length < 4) // Modificare '4'
+
+📊 PERFORMANCE:
+
+OPERAZIONI:
+- Blocco (criptazione): ~200-500ms per 5MB dati
+- Sblocco (decriptazione): ~200-500ms per 5MB dati
+- Impatto auto-lock: Trascurabile (~1ms per reset timer)
+- RAM aggiuntiva: ~2-5MB durante operazioni
+
+OTTIMIZZAZIONE:
+- Criptazione asincrona: Non blocca UI
+- Web Crypto API: Hardware-accelerated quando possibile
+- Lazy loading: Chiave in memoria solo quando necessario
+
+🆘 TROUBLESHOOTING:
+
+PROBLEMA: "Password errata o dati corrotti"
+CAUSA: Password sbagliata, dati manomessi, browser incompatibile
+SOLUZIONE: Verificare password, riprovare, usare backup
+
+PROBLEMA: Dati persi dopo blocco
+CAUSA: Password dimenticata, dati corrotti
+SOLUZIONE: Ripristinare da backup esterno (nessun recovery possibile)
+
+PROBLEMA: Auto-lock non funziona
+CAUSA: Finestra browser chiusa, JavaScript disabilitato
+SOLUZIONE: Mantenere finestra aperta, verificare settings browser
+
+PROBLEMA: Performance lente
+CAUSA: Troppi dati, dispositivo lento
+SOLUZIONE: Fare pulizia dati vecchi, ridurre iterazioni PBKDF2
+
+📜 CONFORMITÀ:
+
+STANDARD:
+- W3C Web Cryptography API Recommendation
+- NIST Special Publication 800-132 (PBKDF2)
+- NIST Special Publication 800-38D (GCM)
+- RFC 5869 (HKDF - futuro upgrade)
+
+COMPATIBILITÀ BROWSER:
+✅ Chrome 37+ (2014)
+✅ Firefox 34+ (2014)
+✅ Safari 11+ (2017)
+✅ Edge 79+ (2020)
+✅ Opera 24+ (2014)
+
+GDPR/PRIVACY:
+✅ Dati criptati localmente
+✅ Nessun trasferimento a server
+✅ Utente ha controllo completo
+✅ Possibilità cancellazione totale
+
+⚙️ CODICE SORGENTE:
+
+Funzioni principali in app.js:
+- deriveKey(password, salt): Deriva chiave da password
+- encryptData(data, key): Cripta dati con AES-GCM
+- decryptData(encryptedData, key): Decripta dati
+- lockApp(password): Blocca applicazione
+- unlockApp(password): Sblocca applicazione
+- checkLockStatus(): Verifica stato all'avvio
+- resetLockTimer(): Gestisce auto-lock
+
+UI in Hb_home.html:
+- Pulsante "Blocca/Sblocca" nel footer
+- Modal con form password
+- Indicatori visivi stato locked
+
+Stili in style.css:
+- .lock-button: Pulsante nel footer
+- #lockModal: Finestra modale
+- .lock-warning: Avviso sicurezza
+
+📞 SUPPORTO:
+
+Per domande sulla sicurezza:
+Tamburini Christofer - Web Developer
+Email: [christofer.tamburini92@gmail.com]
+
+Data creazione: 17 Novembre 2025
+Versione: 1.0

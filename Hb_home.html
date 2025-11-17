@@ -3,10 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HB_termoimpianti</title>
+  <title>HB Termoimpianti</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#58a6ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HB Termoimpianti">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="HB Termoimpianti">
   
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="img/logo.ico">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="152x152" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="167x167" href="img/logo.ico">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +40,45 @@
 </head>
 
 <body>
+  <!-- Menu hamburger per mobile -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+    <span class="menu-text">Menu</span>
+  </div>
+  
+  <!-- Menu dropdown mobile -->
+  <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
+    <div class="mobile-menu-item active" data-tab="dashboard">
+      <i class="fas fa-chart-line"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="clienti">
+      <i class="fas fa-users"></i>
+      <span>Clienti</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="materiali">
+      <i class="fas fa-tools"></i>
+      <span>Materiali</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="interventi">
+      <i class="fas fa-clipboard-list"></i>
+      <span>Interventi</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="preventivi">
+      <i class="fas fa-file-invoice-dollar"></i>
+      <span>Preventivi</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="calendario">
+      <i class="fas fa-calendar-alt"></i>
+      <span>Calendario</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="fatture">
+      <i class="fas fa-file-invoice"></i>
+      <span>Fatture</span>
+    </div>
+  </div>
+
+  <!-- Menu normale per desktop/tablet -->
   <nav class="tabs">
     <div class="tab active" data-tab="dashboard">
       <i class="fas fa-chart-line"></i>
@@ -73,12 +129,53 @@
           <i class="fas fa-upload"></i>
           <span>Ripristina</span>
         </button>
+        <button id="lockBtn" class="lock-button" title="Blocca/Sblocca applicazione">
+          <i class="fas fa-lock"></i>
+          <span id="lockBtnText">Blocca</span>
+        </button>
       </div>
     </div>
   </footer>
 
   <!-- Input file nascosto per il ripristino backup -->
   <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+
+  <!-- Modal per blocco/sblocco applicazione -->
+  <div id="lockModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="lockModalTitle">
+          <i class="fas fa-lock"></i>
+          <span id="lockModalTitleText">Blocca Applicazione</span>
+        </h2>
+      </div>
+      <div class="modal-body">
+        <p id="lockModalDescription">Inserisci una password per proteggere i tuoi dati. I dati verranno criptati con algoritmo AES-256.</p>
+        
+        <div class="form-group">
+          <label for="lockPassword">Password <span class="required">*</span></label>
+          <input type="password" id="lockPassword" placeholder="Minimo 4 caratteri" required>
+        </div>
+        
+        <div class="form-group" id="confirmPasswordGroup">
+          <label for="lockPasswordConfirm">Conferma Password <span class="required">*</span></label>
+          <input type="password" id="lockPasswordConfirm" placeholder="Ripeti la password" required>
+        </div>
+        
+        <div class="lock-warning" id="lockWarning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p><strong>Attenzione:</strong> Non dimenticare la password! Senza di essa non potrai più accedere ai tuoi dati.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="lockModalCancel">Annulla</button>
+        <button type="button" class="btn-primary" id="lockModalConfirm">
+          <i class="fas fa-lock"></i>
+          <span id="lockModalConfirmText">Blocca</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

@@ -3,6 +3,20 @@
    Versione: 2.0.0
    ==================================== */
 
+// ==================== PWA SERVICE WORKER ====================
+// Registrazione del Service Worker per funzionalità PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then((registration) => {
+        console.log('SW registrato con successo: ', registration.scope);
+      })
+      .catch((registrationError) => {
+        console.log('Errore registrazione SW: ', registrationError);
+      });
+  });
+}
+
 // ==================== ELECTRON INTEGRATION ====================
 // Supporto per l'esecuzione in ambiente Electron (applicazione desktop)
 let isElectron = false;
@@ -23,6 +37,112 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   });
 }
 
+// ==================== SECURITY & ENCRYPTION ====================
+// Stato di sicurezza dell'applicazione
+let isAppLocked = false;
+let encryptionKey = null;
+let lockTimer = null;
+const AUTO_LOCK_MINUTES = 30; // Auto-lock dopo 30 minuti di inattività
+
+/**
+ * Deriva una chiave crittografica dalla password usando PBKDF2
+ * @param {string} password - Password inserita dall'utente
+ * @param {Uint8Array} salt - Salt per la derivazione (o null per generarne uno nuovo)
+ * @returns {Promise<{key: CryptoKey, salt: Uint8Array}>} Chiave e salt
+ */
+async function deriveKey(password, salt = null) {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+  
+  if (!salt) {
+    salt = crypto.getRandomValues(new Uint8Array(16));
+  }
+  
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+  
+  return { key, salt };
+}
+
+/**
+ * Cripta dati usando AES-GCM
+ * @param {string} data - Dati da criptare (stringa JSON)
+ * @param {CryptoKey} key - Chiave di crittografia
+ * @returns {Promise<string>} Dati criptati in base64 con IV e salt
+ */
+async function encryptData(data, key) {
+  const encoder = new TextEncoder();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  
+  const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: iv },
+    key,
+    encoder.encode(data)
+  );
+  
+  // Combina IV + encrypted data
+  const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encryptedBuffer), iv.length);
+  
+  // Converti in base64 per storage (chunk per evitare stack overflow)
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < combined.length; i += chunkSize) {
+    const chunk = combined.slice(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Decripta dati usando AES-GCM
+ * @param {string} encryptedData - Dati criptati in base64
+ * @param {CryptoKey} key - Chiave di decrittografia
+ * @returns {Promise<string>} Dati decriptati (stringa JSON)
+ */
+async function decryptData(encryptedData, key) {
+  try {
+    // Decodifica da base64
+    const binaryString = atob(encryptedData);
+    const combined = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      combined[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Separa IV e dati criptati
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+    
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encrypted
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedBuffer);
+  } catch (error) {
+    throw new Error('Password errata o dati corrotti');
+  }
+}
+
 // ==================== UTILITY FUNCTIONS ====================
 /**
  * Recupera dati dal localStorage con fallback
@@ -32,7 +152,15 @@ if (typeof window !== 'undefined' && window.electronAPI) {
  */
 function getStorage(key, fallback) {
   try { 
-    return JSON.parse(localStorage.getItem(key)) ?? fallback; 
+    const data = localStorage.getItem(key);
+    if (!data) return fallback;
+    
+    // Se l'app è bloccata e i dati sono criptati, non restituirli
+    if (isAppLocked && data.startsWith('encrypted:')) {
+      return fallback;
+    }
+    
+    return JSON.parse(data) ?? fallback; 
   } catch { 
     return fallback; 
   }
@@ -45,6 +173,159 @@ function getStorage(key, fallback) {
  */
 function setStorage(key, val) { 
   localStorage.setItem(key, JSON.stringify(val)); 
+}
+
+/**
+ * Cripta tutti i dati sensibili e blocca l'applicazione
+ * @param {string} password - Password per la crittografia
+ * @returns {Promise<boolean>} True se operazione riuscita
+ */
+async function lockApp(password) {
+  try {
+    // Verifica che ci sia una password
+    if (!password || password.length < 4) {
+      alert('La password deve contenere almeno 4 caratteri');
+      return false;
+    }
+    
+    // Crea la chiave di crittografia
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const { key } = await deriveKey(password, salt);
+    
+    // Raccogli tutti i dati da criptare
+    const allData = {
+      clients: getStorage('clients', []),
+      materials: getStorage('materials', []),
+      jobs: getStorage('jobs', []),
+      quotes: getStorage('quotes', []),
+      invoices: getStorage('invoices', []),
+      appointments: getStorage('appointments', [])
+    };
+    
+    // Cripta i dati
+    const jsonData = JSON.stringify(allData);
+    const encrypted = await encryptData(jsonData, key);
+    
+    // Salva i dati criptati e il salt
+    localStorage.setItem('encrypted_data', encrypted);
+    let saltBinary = '';
+    for (let i = 0; i < salt.length; i++) {
+      saltBinary += String.fromCharCode(salt[i]);
+    }
+    localStorage.setItem('encryption_salt', btoa(saltBinary));
+    
+    // Rimuovi i dati in chiaro
+    localStorage.removeItem('clients');
+    localStorage.removeItem('materials');
+    localStorage.removeItem('jobs');
+    localStorage.removeItem('quotes');
+    localStorage.removeItem('invoices');
+    localStorage.removeItem('appointments');
+    
+    // Marca l'app come bloccata
+    localStorage.setItem('app_locked', 'true');
+    isAppLocked = true;
+    encryptionKey = null;
+    
+    return true;
+  } catch (error) {
+    console.error('Errore durante il blocco:', error);
+    alert('Errore durante il blocco dell\'applicazione');
+    return false;
+  }
+}
+
+/**
+ * Decripta i dati e sblocca l'applicazione
+ * @param {string} password - Password per la decrittografia
+ * @returns {Promise<boolean>} True se operazione riuscita
+ */
+async function unlockApp(password) {
+  try {
+    // Recupera salt e dati criptati
+    const saltBase64 = localStorage.getItem('encryption_salt');
+    const encryptedData = localStorage.getItem('encrypted_data');
+    
+    if (!saltBase64 || !encryptedData) {
+      alert('Nessun dato criptato trovato');
+      return false;
+    }
+    
+    // Ricrea la chiave dalla password
+    const saltBinary = atob(saltBase64);
+    const salt = new Uint8Array(saltBinary.length);
+    for (let i = 0; i < saltBinary.length; i++) {
+      salt[i] = saltBinary.charCodeAt(i);
+    }
+    const { key } = await deriveKey(password, salt);
+    
+    // Decripta i dati
+    const decryptedJson = await decryptData(encryptedData, key);
+    const allData = JSON.parse(decryptedJson);
+    
+    // Ripristina i dati in localStorage
+    setStorage('clients', allData.clients || []);
+    setStorage('materials', allData.materials || []);
+    setStorage('jobs', allData.jobs || []);
+    setStorage('quotes', allData.quotes || []);
+    setStorage('invoices', allData.invoices || []);
+    setStorage('appointments', allData.appointments || []);
+    
+    // Rimuovi i dati criptati
+    localStorage.removeItem('encrypted_data');
+    localStorage.removeItem('encryption_salt');
+    localStorage.removeItem('app_locked');
+    
+    // Sblocca l'app
+    isAppLocked = false;
+    encryptionKey = key;
+    
+    // Avvia il timer di auto-lock
+    resetLockTimer();
+    
+    return true;
+  } catch (error) {
+    console.error('Errore durante lo sblocco:', error);
+    alert('Password errata o dati corrotti');
+    return false;
+  }
+}
+
+/**
+ * Resetta il timer di auto-lock
+ */
+function resetLockTimer() {
+  if (lockTimer) {
+    clearTimeout(lockTimer);
+  }
+  
+  lockTimer = setTimeout(() => {
+    if (!isAppLocked) {
+      const shouldLock = confirm('Inattività rilevata. Vuoi bloccare l\'applicazione per sicurezza?');
+      if (shouldLock) {
+        showLockModal(true);
+      }
+    }
+  }, AUTO_LOCK_MINUTES * 60 * 1000);
+}
+
+/**
+ * Controlla se l'app è bloccata all'avvio
+ */
+function checkLockStatus() {
+  const locked = localStorage.getItem('app_locked') === 'true';
+  if (locked) {
+    isAppLocked = true;
+    showLockModal(false);
+  } else {
+    // Avvia il timer di auto-lock se non è bloccata
+    resetLockTimer();
+    
+    // Aggiungi listener per attività utente
+    ['click', 'keypress', 'mousemove', 'touchstart'].forEach(event => {
+      document.addEventListener(event, resetLockTimer, { passive: true });
+    });
+  }
 }
 
 /**
@@ -141,39 +422,393 @@ function importAllData(dataString) {
       throw new Error('Formato file non valido');
     }
     
-    // Chiedi conferma prima di sovrascrivere
-    const confirm = window.confirm(
-      'Questa operazione sovrascriverà tutti i dati esistenti. Continuare?'
-    );
+    // Mostra dialog per scegliere modalità di importazione
+    showImportModeDialog(data);
     
-    if (confirm) {
-      // Ripristina tutti i dati
-      setStorage('clients', data.clients);
-      setStorage('materials', data.materials);
-      setStorage('jobs', data.jobs);
-      setStorage('quotes', data.quotes);
-      setStorage('invoices', data.invoices || []);
-      setStorage('appointments', data.appointments || []);
-      
-      // Aggiorna le variabili globali
-      clients = data.clients;
-      materials = data.materials;
-      jobs = data.jobs;
-      quotes = data.quotes;
-      invoices = data.invoices || [];
-      appointments = data.appointments || [];
-      
-      // Ricarica la vista corrente
-      const activeTab = document.querySelector('.tab.active');
-      if (activeTab) {
-        showTab(activeTab.dataset.tab);
-      }
-      
-      showNotification('Dati importati con successo!', 'success');
-    }
   } catch (error) {
     console.error('Errore durante l\'importazione:', error);
     showNotification('Errore durante l\'importazione. Verifica che il file sia valido.', 'error');
+  }
+}
+
+/**
+ * Mostra dialog per scegliere se sovrascrivere o unire i dati
+ */
+function showImportModeDialog(importData) {
+  const existingClients = getStorage('clients', []).length;
+  const existingMaterials = getStorage('materials', []).length;
+  const existingJobs = getStorage('jobs', []).length;
+  const existingQuotes = getStorage('quotes', []).length;
+  const existingInvoices = getStorage('invoices', []).length;
+  const existingAppointments = getStorage('appointments', []).length;
+  
+  const importClients = importData.clients.length;
+  const importMaterials = importData.materials.length;
+  const importJobs = importData.jobs.length;
+  const importQuotes = importData.quotes.length;
+  const importInvoices = (importData.invoices || []).length;
+  const importAppointments = (importData.appointments || []).length;
+  
+  const hasExistingData = existingClients + existingMaterials + existingJobs + 
+                          existingQuotes + existingInvoices + existingAppointments > 0;
+  
+  let message = `FILE BACKUP:\n`;
+  message += `• Clienti: ${importClients}\n`;
+  message += `• Materiali: ${importMaterials}\n`;
+  message += `• Interventi: ${importJobs}\n`;
+  message += `• Preventivi: ${importQuotes}\n`;
+  message += `• Fatture: ${importInvoices}\n`;
+  message += `• Appuntamenti: ${importAppointments}\n\n`;
+  
+  if (hasExistingData) {
+    message += `DATI ATTUALI:\n`;
+    message += `• Clienti: ${existingClients}\n`;
+    message += `• Materiali: ${existingMaterials}\n`;
+    message += `• Interventi: ${existingJobs}\n`;
+    message += `• Preventivi: ${existingQuotes}\n`;
+    message += `• Fatture: ${existingInvoices}\n`;
+    message += `• Appuntamenti: ${existingAppointments}\n\n`;
+    message += `Scegli come importare:\n\n`;
+    message += `OK = UNISCI (aggiungi ai dati esistenti)\n`;
+    message += `ANNULLA = SOVRASCRIVI (sostituisci tutto)`;
+    
+    const shouldMerge = window.confirm(message);
+    
+    if (shouldMerge) {
+      mergeImportedData(importData);
+    } else {
+      // Chiedi conferma per sovrascrittura
+      const confirmOverwrite = window.confirm(
+        '⚠️ ATTENZIONE!\n\nQuesta operazione CANCELLERÀ tutti i dati esistenti.\n\nSei sicuro di voler continuare?'
+      );
+      if (confirmOverwrite) {
+        overwriteAllData(importData);
+      }
+    }
+  } else {
+    // Nessun dato esistente, importa direttamente
+    overwriteAllData(importData);
+  }
+}
+
+/**
+ * Unisce i dati importati con quelli esistenti
+ */
+function mergeImportedData(importData) {
+  try {
+    // Recupera dati esistenti
+    const existingClients = getStorage('clients', []);
+    const existingMaterials = getStorage('materials', []);
+    const existingJobs = getStorage('jobs', []);
+    const existingQuotes = getStorage('quotes', []);
+    const existingInvoices = getStorage('invoices', []);
+    const existingAppointments = getStorage('appointments', []);
+    
+    // Trova ID massimi per evitare conflitti
+    const maxClientId = Math.max(0, ...existingClients.map(c => c.id));
+    const maxMaterialId = Math.max(0, ...existingMaterials.map(m => m.id));
+    const maxJobId = Math.max(0, ...existingJobs.map(j => j.id));
+    const maxQuoteId = Math.max(0, ...existingQuotes.map(q => q.id));
+    const maxInvoiceId = Math.max(0, ...existingInvoices.map(i => i.id));
+    const maxAppointmentId = Math.max(0, ...existingAppointments.map(a => a.id));
+    
+    // Crea mappe per tracciare la corrispondenza degli ID
+    const clientIdMap = {};
+    const materialIdMap = {};
+    const jobIdMap = {};
+    const quoteIdMap = {};
+    
+    // Contatori per statistiche
+    let stats = {
+      clientsAdded: 0,
+      clientsSkipped: 0,
+      materialsAdded: 0,
+      materialsSkipped: 0,
+      jobsAdded: 0,
+      jobsSkipped: 0,
+      quotesAdded: 0,
+      quotesSkipped: 0,
+      invoicesAdded: 0,
+      invoicesSkipped: 0,
+      appointmentsAdded: 0,
+      appointmentsSkipped: 0
+    };
+    
+    // Helper: controlla se un cliente esiste già
+    function clientExists(newClient, existingList) {
+      return existingList.find(c => 
+        c.nome?.toLowerCase() === newClient.nome?.toLowerCase() &&
+        c.cognome?.toLowerCase() === newClient.cognome?.toLowerCase() &&
+        c.telefono === newClient.telefono
+      );
+    }
+    
+    // Helper: controlla se un materiale esiste già
+    function materialExists(newMaterial, existingList) {
+      return existingList.find(m => 
+        m.descrizione?.toLowerCase() === newMaterial.descrizione?.toLowerCase() &&
+        Math.abs((m.prezzo || 0) - (newMaterial.prezzo || 0)) < 0.01
+      );
+    }
+    
+    // Helper: controlla se un intervento esiste già (stesso cliente, data, descrizione)
+    function jobExists(newJob, existingList, clientIdMapping) {
+      const mappedClientId = clientIdMapping[newJob.clientId] || newJob.clientId;
+      return existingList.find(j => 
+        j.clientId === mappedClientId &&
+        j.data === newJob.data &&
+        j.descrizione?.toLowerCase() === newJob.descrizione?.toLowerCase()
+      );
+    }
+    
+    // Helper: controlla se un preventivo esiste già (stesso numero o stesso cliente + data)
+    function quoteExists(newQuote, existingList, clientIdMapping) {
+      const mappedClientId = clientIdMapping[newQuote.clientId] || newQuote.clientId;
+      return existingList.find(q => 
+        q.numero === newQuote.numero ||
+        (q.clientId === mappedClientId && q.data === newQuote.data)
+      );
+    }
+    
+    // Helper: controlla se una fattura esiste già (stesso numero)
+    function invoiceExists(newInvoice, existingList) {
+      return existingList.find(i => i.numero === newInvoice.numero);
+    }
+    
+    // Helper: controlla se un appuntamento esiste già (stesso cliente, data, ora)
+    function appointmentExists(newAppointment, existingList, clientIdMapping) {
+      const mappedClientId = clientIdMapping[newAppointment.clientId] || newAppointment.clientId;
+      return existingList.find(a => 
+        a.clientId === mappedClientId &&
+        a.data === newAppointment.data &&
+        a.ora === newAppointment.ora
+      );
+    }
+    
+    // Unisci clienti (evitando duplicati)
+    let newClientId = maxClientId + 1;
+    const mergedClients = [...existingClients];
+    importData.clients.forEach(client => {
+      const existing = clientExists(client, mergedClients);
+      if (existing) {
+        // Cliente già esistente, mappa il vecchio ID al nuovo
+        clientIdMap[client.id] = existing.id;
+        stats.clientsSkipped++;
+      } else {
+        // Nuovo cliente, aggiungilo
+        const oldId = client.id;
+        const newClient = { ...client, id: newClientId };
+        clientIdMap[oldId] = newClientId;
+        mergedClients.push(newClient);
+        newClientId++;
+        stats.clientsAdded++;
+      }
+    });
+    
+    // Unisci materiali (evitando duplicati)
+    let newMaterialId = maxMaterialId + 1;
+    const mergedMaterials = [...existingMaterials];
+    importData.materials.forEach(material => {
+      const existing = materialExists(material, mergedMaterials);
+      if (existing) {
+        // Materiale già esistente
+        materialIdMap[material.id] = existing.id;
+        stats.materialsSkipped++;
+      } else {
+        // Nuovo materiale
+        const oldId = material.id;
+        const newMaterial = { ...material, id: newMaterialId };
+        materialIdMap[oldId] = newMaterialId;
+        mergedMaterials.push(newMaterial);
+        newMaterialId++;
+        stats.materialsAdded++;
+      }
+    });
+    
+    // Unisci interventi (evitando duplicati, aggiornando riferimenti clientId)
+    let newJobId = maxJobId + 1;
+    const mergedJobs = [...existingJobs];
+    importData.jobs.forEach(job => {
+      const existing = jobExists(job, mergedJobs, clientIdMap);
+      if (existing) {
+        // Intervento già esistente
+        jobIdMap[job.id] = existing.id;
+        stats.jobsSkipped++;
+      } else {
+        // Nuovo intervento
+        const oldId = job.id;
+        const newJob = { 
+          ...job, 
+          id: newJobId,
+          clientId: clientIdMap[job.clientId] || job.clientId
+        };
+        jobIdMap[oldId] = newJobId;
+        mergedJobs.push(newJob);
+        newJobId++;
+        stats.jobsAdded++;
+      }
+    });
+    
+    // Unisci preventivi (evitando duplicati, aggiornando riferimenti)
+    let newQuoteId = maxQuoteId + 1;
+    const mergedQuotes = [...existingQuotes];
+    importData.quotes.forEach(quote => {
+      const existing = quoteExists(quote, mergedQuotes, clientIdMap);
+      if (existing) {
+        // Preventivo già esistente
+        quoteIdMap[quote.id] = existing.id;
+        stats.quotesSkipped++;
+      } else {
+        // Nuovo preventivo
+        const oldId = quote.id;
+        const newQuote = { 
+          ...quote, 
+          id: newQuoteId,
+          clientId: clientIdMap[quote.clientId] || quote.clientId,
+          items: (quote.items || []).map(item => ({
+            ...item,
+            materialId: materialIdMap[item.materialId] || item.materialId
+          }))
+        };
+        quoteIdMap[oldId] = newQuoteId;
+        mergedQuotes.push(newQuote);
+        newQuoteId++;
+        stats.quotesAdded++;
+      }
+    });
+    
+    // Unisci fatture (evitando duplicati, aggiornando riferimenti)
+    let newInvoiceId = maxInvoiceId + 1;
+    const mergedInvoices = [...existingInvoices];
+    (importData.invoices || []).forEach(invoice => {
+      const existing = invoiceExists(invoice, mergedInvoices);
+      if (existing) {
+        // Fattura già esistente (stesso numero)
+        stats.invoicesSkipped++;
+      } else {
+        // Nuova fattura
+        const newInvoice = { 
+          ...invoice, 
+          id: newInvoiceId,
+          clientId: clientIdMap[invoice.clientId] || invoice.clientId,
+          jobId: jobIdMap[invoice.jobId] || invoice.jobId
+        };
+        mergedInvoices.push(newInvoice);
+        newInvoiceId++;
+        stats.invoicesAdded++;
+      }
+    });
+    
+    // Unisci appuntamenti (evitando duplicati, aggiornando riferimenti)
+    let newAppointmentId = maxAppointmentId + 1;
+    const mergedAppointments = [...existingAppointments];
+    (importData.appointments || []).forEach(appointment => {
+      const existing = appointmentExists(appointment, mergedAppointments, clientIdMap);
+      if (existing) {
+        // Appuntamento già esistente
+        stats.appointmentsSkipped++;
+      } else {
+        // Nuovo appuntamento
+        const newAppointment = { 
+          ...appointment, 
+          id: newAppointmentId,
+          clientId: clientIdMap[appointment.clientId] || appointment.clientId
+        };
+        mergedAppointments.push(newAppointment);
+        newAppointmentId++;
+        stats.appointmentsAdded++;
+      }
+    });
+    
+    // Salva i dati uniti
+    setStorage('clients', mergedClients);
+    setStorage('materials', mergedMaterials);
+    setStorage('jobs', mergedJobs);
+    setStorage('quotes', mergedQuotes);
+    setStorage('invoices', mergedInvoices);
+    setStorage('appointments', mergedAppointments);
+    
+    // Aggiorna variabili globali
+    clients = mergedClients;
+    materials = mergedMaterials;
+    jobs = mergedJobs;
+    quotes = mergedQuotes;
+    invoices = mergedInvoices;
+    appointments = mergedAppointments;
+    
+    // Ricarica la vista
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+      showTab(activeTab.dataset.tab);
+    }
+    
+    // Mostra statistiche dettagliate
+    const totalAdded = stats.clientsAdded + stats.materialsAdded + stats.jobsAdded + 
+                       stats.quotesAdded + stats.invoicesAdded + stats.appointmentsAdded;
+    const totalSkipped = stats.clientsSkipped + stats.materialsSkipped + stats.jobsSkipped + 
+                         stats.quotesSkipped + stats.invoicesSkipped + stats.appointmentsSkipped;
+    
+    let message = `✅ Unione completata!\n\n`;
+    message += `📊 AGGIUNTI:\n`;
+    if (stats.clientsAdded > 0) message += `• Clienti: ${stats.clientsAdded}\n`;
+    if (stats.materialsAdded > 0) message += `• Materiali: ${stats.materialsAdded}\n`;
+    if (stats.jobsAdded > 0) message += `• Interventi: ${stats.jobsAdded}\n`;
+    if (stats.quotesAdded > 0) message += `• Preventivi: ${stats.quotesAdded}\n`;
+    if (stats.invoicesAdded > 0) message += `• Fatture: ${stats.invoicesAdded}\n`;
+    if (stats.appointmentsAdded > 0) message += `• Appuntamenti: ${stats.appointmentsAdded}\n`;
+    
+    if (totalSkipped > 0) {
+      message += `\n⏭️ DUPLICATI SALTATI:\n`;
+      if (stats.clientsSkipped > 0) message += `• Clienti: ${stats.clientsSkipped}\n`;
+      if (stats.materialsSkipped > 0) message += `• Materiali: ${stats.materialsSkipped}\n`;
+      if (stats.jobsSkipped > 0) message += `• Interventi: ${stats.jobsSkipped}\n`;
+      if (stats.quotesSkipped > 0) message += `• Preventivi: ${stats.quotesSkipped}\n`;
+      if (stats.invoicesSkipped > 0) message += `• Fatture: ${stats.invoicesSkipped}\n`;
+      if (stats.appointmentsSkipped > 0) message += `• Appuntamenti: ${stats.appointmentsSkipped}\n`;
+    }
+    
+    message += `\n📈 Totale: +${totalAdded} elementi`;
+    
+    alert(message);
+    showNotification(`Dati uniti: +${totalAdded} nuovi, ${totalSkipped} duplicati saltati`, 'success');
+    
+  } catch (error) {
+    console.error('Errore durante l\'unione:', error);
+    showNotification('Errore durante l\'unione dei dati', 'error');
+  }
+}
+
+/**
+ * Sovrascrive tutti i dati esistenti
+ */
+function overwriteAllData(importData) {
+  try {
+    // Ripristina tutti i dati
+    setStorage('clients', importData.clients);
+    setStorage('materials', importData.materials);
+    setStorage('jobs', importData.jobs);
+    setStorage('quotes', importData.quotes);
+    setStorage('invoices', importData.invoices || []);
+    setStorage('appointments', importData.appointments || []);
+    
+    // Aggiorna le variabili globali
+    clients = importData.clients;
+    materials = importData.materials;
+    jobs = importData.jobs;
+    quotes = importData.quotes;
+    invoices = importData.invoices || [];
+    appointments = importData.appointments || [];
+    
+    // Ricarica la vista corrente
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+      showTab(activeTab.dataset.tab);
+    }
+    
+    showNotification('✅ Dati sovrascritti con successo!', 'success');
+  } catch (error) {
+    console.error('Errore durante la sovrascrittura:', error);
+    showNotification('Errore durante la sovrascrittura', 'error');
   }
 }
 
@@ -529,15 +1164,92 @@ if (isElectron) {
 
 // ---------- Tabs ----------
 const tabs = document.querySelectorAll(".tab");
+const mobileMenuItems = document.querySelectorAll(".mobile-menu-item");
 const content = document.getElementById("content");
 
+// Gestione tabs desktop
 tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     tabs.forEach(t => t.classList.remove("active"));
+    mobileMenuItems.forEach(m => m.classList.remove("active"));
     tab.classList.add("active");
+    // Sincronizza con il menu mobile
+    const mobileItem = document.querySelector(`.mobile-menu-item[data-tab="${tab.dataset.tab}"]`);
+    if (mobileItem) mobileItem.classList.add("active");
     showTab(tab.dataset.tab);
   });
 });
+
+// Gestione menu mobile
+mobileMenuItems.forEach(item => {
+  item.addEventListener("click", () => {
+    tabs.forEach(t => t.classList.remove("active"));
+    mobileMenuItems.forEach(m => m.classList.remove("active"));
+    item.classList.add("active");
+    // Sincronizza con le tabs desktop
+    const desktopTab = document.querySelector(`.tab[data-tab="${item.dataset.tab}"]`);
+    if (desktopTab) desktopTab.classList.add("active");
+    showTab(item.dataset.tab);
+    // Chiudi il menu dopo la selezione
+    closeMobileMenu();
+  });
+});
+
+// ---------- Menu Mobile Hamburger ----------
+function initializeMobileMenu() {
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const mobileMenuDropdown = document.getElementById('mobileMenuDropdown');
+  
+  if (mobileMenuToggle && mobileMenuDropdown) {
+    mobileMenuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
+    
+    // Chiudi menu quando si clicca fuori
+    document.addEventListener('click', (e) => {
+      if (!mobileMenuDropdown.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+        closeMobileMenu();
+      }
+    });
+    
+    // Impedisci che il click sul dropdown chiuda il menu
+    mobileMenuDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+}
+
+function toggleMobileMenu() {
+  const dropdown = document.getElementById('mobileMenuDropdown');
+  const toggle = document.getElementById('mobileMenuToggle');
+  
+  if (dropdown && toggle) {
+    dropdown.classList.toggle('show');
+    
+    // Cambia icona hamburger
+    const icon = toggle.querySelector('i');
+    if (dropdown.classList.contains('show')) {
+      icon.className = 'fas fa-times';
+    } else {
+      icon.className = 'fas fa-bars';
+    }
+  }
+}
+
+function closeMobileMenu() {
+  const dropdown = document.getElementById('mobileMenuDropdown');
+  const toggle = document.getElementById('mobileMenuToggle');
+  
+  if (dropdown && toggle) {
+    dropdown.classList.remove('show');
+    const icon = toggle.querySelector('i');
+    icon.className = 'fas fa-bars';
+  }
+}
+
+// Inizializza il menu mobile quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', initializeMobileMenu);
 
 function showTab(name) {
   if (name === "dashboard") renderDashboard();
@@ -617,26 +1329,6 @@ function renderDashboard() {
         <div class="stat-content">
           <div class="stat-number">${clients.length}</div>
           <div class="stat-label">Clienti Registrati</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="fas fa-lightbulb"></i> Suggerimenti</h3>
-      </div>
-      <div class="suggestions">
-        <div class="suggestion">
-          <i class="fas fa-tools"></i>
-          <span>Utilizza la sezione Materiali per calcoli più precisi dei margini</span>
-        </div>
-        <div class="suggestion">
-          <i class="fas fa-file-export"></i>
-          <span>Esporta regolarmente i dati in PDF per backup e documentazione</span>
-        </div>
-        <div class="suggestion">
-          <i class="fas fa-chart-line"></i>
-          <span>Monitora il rapporto tra interventi pagati e totali per ottimizzare i flussi di cassa</span>
         </div>
       </div>
     </div>
@@ -2798,6 +3490,9 @@ function addPDFFooterFast(doc) {
 
 // ---------- Backup Buttons ----------
 document.addEventListener('DOMContentLoaded', () => {
+  // Controlla lo stato di blocco all'avvio
+  checkLockStatus();
+  
   // Pulsante backup
   const backupBtn = document.getElementById('backupBtn');
   if (backupBtn) {
@@ -2842,7 +3537,192 @@ document.addEventListener('DOMContentLoaded', () => {
       event.target.value = '';
     });
   }
+  
+  // Pulsante blocco/sblocco
+  const lockBtn = document.getElementById('lockBtn');
+  const lockBtnText = document.getElementById('lockBtnText');
+  
+  if (lockBtn) {
+    lockBtn.addEventListener('click', () => {
+      const locked = localStorage.getItem('app_locked') === 'true';
+      showLockModal(!locked);
+    });
+  }
+  
+  // Gestione modal blocco
+  const lockModal = document.getElementById('lockModal');
+  const lockModalCancel = document.getElementById('lockModalCancel');
+  const lockModalConfirm = document.getElementById('lockModalConfirm');
+  const lockPassword = document.getElementById('lockPassword');
+  const lockPasswordConfirm = document.getElementById('lockPasswordConfirm');
+  
+  if (lockModalCancel) {
+    lockModalCancel.addEventListener('click', () => {
+      hideLockModal();
+    });
+  }
+  
+  if (lockModalConfirm) {
+    lockModalConfirm.addEventListener('click', async () => {
+      const isLocking = lockModal.dataset.mode === 'lock';
+      const password = lockPassword.value;
+      
+      if (isLocking) {
+        const confirmPassword = lockPasswordConfirm.value;
+        
+        if (!password || password.length < 4) {
+          alert('La password deve contenere almeno 4 caratteri');
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          alert('Le password non corrispondono');
+          return;
+        }
+        
+        // Blocca l'app
+        lockModalConfirm.disabled = true;
+        lockModalConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Crittografia in corso...';
+        
+        const success = await lockApp(password);
+        
+        if (success) {
+          hideLockModal();
+          updateLockButton(true);
+          showNotification('Applicazione bloccata con successo! I dati sono ora criptati.', 'success');
+          
+          // Ricarica la pagina per nascondere i dati
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        
+        lockModalConfirm.disabled = false;
+        lockModalConfirm.innerHTML = '<i class="fas fa-lock"></i> <span>Blocca</span>';
+      } else {
+        // Sblocca l'app
+        if (!password) {
+          alert('Inserisci la password');
+          return;
+        }
+        
+        lockModalConfirm.disabled = true;
+        lockModalConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Decrittografia in corso...';
+        
+        const success = await unlockApp(password);
+        
+        if (success) {
+          hideLockModal();
+          updateLockButton(false);
+          showNotification('Applicazione sbloccata! Benvenuto.', 'success');
+          
+          // Ricarica la pagina per mostrare i dati
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        
+        lockModalConfirm.disabled = false;
+        lockModalConfirm.innerHTML = '<i class="fas fa-unlock"></i> <span>Sblocca</span>';
+      }
+    });
+  }
+  
+  // Enter per confermare
+  if (lockPassword) {
+    lockPassword.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const isLocking = lockModal.dataset.mode === 'lock';
+        if (isLocking) {
+          lockPasswordConfirm.focus();
+        } else {
+          lockModalConfirm.click();
+        }
+      }
+    });
+  }
+  
+  if (lockPasswordConfirm) {
+    lockPasswordConfirm.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        lockModalConfirm.click();
+      }
+    });
+  }
 });
+
+/**
+ * Mostra il modal di blocco/sblocco
+ * @param {boolean} isLocking - True se sta bloccando, false se sta sbloccando
+ */
+function showLockModal(isLocking) {
+  const lockModal = document.getElementById('lockModal');
+  const lockModalTitle = document.getElementById('lockModalTitleText');
+  const lockModalDescription = document.getElementById('lockModalDescription');
+  const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+  const lockWarning = document.getElementById('lockWarning');
+  const lockModalConfirmText = document.getElementById('lockModalConfirmText');
+  const lockPassword = document.getElementById('lockPassword');
+  const lockPasswordConfirm = document.getElementById('lockPasswordConfirm');
+  
+  lockModal.dataset.mode = isLocking ? 'lock' : 'unlock';
+  
+  if (isLocking) {
+    lockModalTitle.textContent = 'Blocca Applicazione';
+    lockModalDescription.textContent = 'Inserisci una password per proteggere i tuoi dati. I dati verranno criptati con algoritmo AES-256.';
+    confirmPasswordGroup.classList.add('show');
+    lockWarning.classList.add('show');
+    lockModalConfirmText.innerHTML = '<i class="fas fa-lock"></i> Blocca';
+  } else {
+    lockModalTitle.textContent = 'Sblocca Applicazione';
+    lockModalDescription.textContent = 'Inserisci la password per decriptare e accedere ai tuoi dati.';
+    confirmPasswordGroup.classList.remove('show');
+    lockWarning.classList.remove('show');
+    lockModalConfirmText.innerHTML = '<i class="fas fa-unlock"></i> Sblocca';
+  }
+  
+  // Reset campi
+  lockPassword.value = '';
+  lockPasswordConfirm.value = '';
+  
+  // Mostra modal
+  lockModal.classList.add('show');
+  lockModal.style.display = 'flex';
+  
+  // Focus sul campo password
+  setTimeout(() => lockPassword.focus(), 100);
+}
+
+/**
+ * Nasconde il modal di blocco
+ */
+function hideLockModal() {
+  const lockModal = document.getElementById('lockModal');
+  lockModal.classList.remove('show');
+  lockModal.style.display = 'none';
+}
+
+/**
+ * Aggiorna il pulsante di blocco in base allo stato
+ * @param {boolean} locked - True se l'app è bloccata
+ */
+function updateLockButton(locked) {
+  const lockBtn = document.getElementById('lockBtn');
+  const lockBtnText = document.getElementById('lockBtnText');
+  const lockBtnIcon = lockBtn.querySelector('i');
+  
+  if (locked) {
+    lockBtn.classList.add('locked');
+    lockBtnIcon.className = 'fas fa-lock';
+    lockBtnText.textContent = 'Sblocca';
+    lockBtn.title = 'Sblocca applicazione';
+  } else {
+    lockBtn.classList.remove('locked');
+    lockBtnIcon.className = 'fas fa-unlock';
+    lockBtnText.textContent = 'Blocca';
+    lockBtn.title = 'Blocca applicazione';
+  }
+}
 
 // ---------- Render Calendar ----------
 // Variabili globali per il calendario
