@@ -2,7 +2,8 @@
   "name": "HB Termoimpianti",
   "short_name": "HB Impianti",
   "description": "Applicazione gestionale per HB Termoimpianti - Clienti, Interventi, Preventivi",
-  "start_url": "/Hb_home.html",
+  "start_url": "./Hb_home.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#58a6ff",
@@ -34,7 +35,7 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Visualizza statistiche e grafici",
-      "url": "/Hb_home.html#dashboard",
+      "url": "./Hb_home.html#dashboard",
       "icons": [
         {
           "src": "img/logo.ico",
@@ -46,7 +47,7 @@
       "name": "Clienti",
       "short_name": "Clienti",
       "description": "Gestione clienti",
-      "url": "/Hb_home.html#clienti",
+      "url": "./Hb_home.html#clienti",
       "icons": [
         {
           "src": "img/logo.ico",
@@ -58,7 +59,7 @@
       "name": "Interventi",
       "short_name": "Interventi",
       "description": "Registra nuovo intervento",
-      "url": "/Hb_home.html#interventi",
+      "url": "./Hb_home.html#interventi",
       "icons": [
         {
           "src": "img/logo.ico",

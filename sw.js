@@ -1,11 +1,12 @@
 // Service Worker per HB Termoimpianti PWA
-const CACHE_NAME = 'hb-impianti-v2.0';
+const CACHE_NAME = 'hb-impianti-v2.1';
 const urlsToCache = [
-  '/Hb_home.html',
-  '/app.js',
-  '/style.css',
-  '/img/logo.ico',
-  '/manifest.json',
+  './Hb_home.html',
+  './index.html',
+  './app.js',
+  './style.css',
+  './img/logo.ico',
+  './manifest.json',
   // Cache delle librerie CDN (allineate con Hb_home.html)
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js',
