@@ -1,8 +1,40 @@
 # HB Termoimpianti - Gestionale Web App
 
-**Applicazione web progressiva (PWA) per la gestione di impianti termici**
+**Applicazione gestionale per HB Termoimpianti**
 
-## 🚀 Accesso all'Applicazione
+## 🖥️ Download Applicazione Desktop
+
+### Windows
+Scarica l'installer dalla cartella `dist/`:
+- **HB-Termoimpianti-2.0.0-Windows.exe** - Installer con setup guidato
+
+### macOS
+La build macOS viene generata automaticamente da GitHub Actions.
+Scarica il `.dmg` dalla sezione [Releases](https://github.com/Tamburini-Christofer/HB_Impianti/releases).
+
+Oppure, per creare la build manualmente su un Mac:
+```bash
+npm install
+npm run build:mac
+```
+
+---
+
+## 🔄 Build Automatiche (GitHub Actions)
+
+Quando crei un nuovo tag di versione, vengono generati automaticamente:
+- `HB-Termoimpianti-X.X.X-Windows.exe` 
+- `HB-Termoimpianti-X.X.X-Mac.dmg`
+
+Per creare una release:
+```bash
+git tag v2.0.0
+git push origin v2.0.0
+```
+
+---
+
+## 🚀 Accesso all'Applicazione Web (PWA)
 
 **URL Diretto:**
 [https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html](https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html)
