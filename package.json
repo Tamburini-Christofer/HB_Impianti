@@ -75,7 +75,7 @@
           "arch": ["x64", "arm64"]
         }
       ],
-      "icon": "img/logo.ico",
+      "icon": "img/logo.jpg",
       "artifactName": "HB-Termoimpianti-${version}-Mac.${ext}",
       "category": "public.app-category.business"
     },
