@@ -1,126 +1,148 @@
-# HB Termoimpianti - Gestionale Web App
+# HB Termoimpianti
 
-**Applicazione gestionale per HB Termoimpianti**
+> **Gestionale completo per imprese termoidrauliche**  
+> Clienti • Interventi • Preventivi • Fatture • Calendario
 
-## 🖥️ Download Applicazione Desktop
+---
 
-### Windows
-Scarica l'installer dalla cartella `dist/`:
-- **HB-Termoimpianti-2.0.0-Windows.exe** - Installer con setup guidato
+## 🚀 Accesso Rapido
 
-### macOS
-La build macOS viene generata automaticamente da GitHub Actions.
-Scarica il `.dmg` dalla sezione [Releases](https://github.com/Tamburini-Christofer/HB_Impianti/releases).
+| Piattaforma | Download/Accesso |
+|-------------|------------------|
+| **🌐 Web/Mobile (PWA)** | [Apri App](https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html) |
+| **💻 Windows** | [Releases](https://github.com/Tamburini-Christofer/HB_Impianti/releases) → `.exe` |
+| **🍎 macOS** | [Releases](https://github.com/Tamburini-Christofer/HB_Impianti/releases) → `.dmg` |
 
-Oppure, per creare la build manualmente su un Mac:
+---
+
+## 📱 Installazione PWA (Mobile)
+
+### Android
+1. Apri il [link](https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html) in Chrome
+2. Menu ⋮ → **"Installa app"**
+3. L'icona apparirà nella home
+
+### iPhone/iPad
+1. Apri il [link](https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html) in Safari
+2. Condividi □↗ → **"Aggiungi alla schermata Home"**
+
+---
+
+## ✨ Funzionalità
+
+| Modulo | Descrizione |
+|--------|-------------|
+| 📊 Dashboard | Statistiche e grafici in tempo reale |
+| 👥 Clienti | Anagrafica completa con storico |
+| 🔧 Materiali | Catalogo con prezzi e gestione magazzino |
+| ⚒️ Interventi | Registro lavori con dettagli e allegati |
+| 📋 Preventivi | Generazione PDF professionale |
+| 🧾 Fatture | Tracciamento pagamenti |
+| 📅 Calendario | Pianificazione appuntamenti mensile |
+| 💾 Backup | Esporta/Importa con merge intelligente |
+
+---
+
+## 🔐 Sicurezza e Privacy
+
+- **🔒 Crittografia AES-256** con PBKDF2 (100k iterazioni)
+- **📴 100% Offline** - Nessun server, dati solo sul dispositivo
+- **🔑 Blocco Password** opzionale con auto-lock (30 min)
+- **🛡️ Privacy Totale** - I tuoi dati restano tuoi
+
+---
+
+## 🛠️ Sviluppo
+
+### Prerequisiti
+- Node.js 18+
+- npm
+
+### Comandi
+
 ```bash
+# Installazione dipendenze
 npm install
+
+# Avvia in modalità sviluppo (Electron)
+npm start
+
+# Build Windows
+npm run dist
+
+# Build macOS (solo su Mac)
 npm run build:mac
 ```
 
+### Release Automatiche (CI/CD)
+
+Le build vengono generate automaticamente da GitHub Actions:
+
+```bash
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+→ Windows `.exe` e macOS `.dmg` saranno disponibili in [Releases](https://github.com/Tamburini-Christofer/HB_Impianti/releases)
+
 ---
 
-## 🔄 Build Automatiche (GitHub Actions)
+## 📁 Struttura Progetto
 
-Quando crei un nuovo tag di versione, vengono generati automaticamente:
-- `HB-Termoimpianti-X.X.X-Windows.exe` 
-- `HB-Termoimpianti-X.X.X-Mac.dmg`
-
-Per creare una release:
-```bash
-git tag v2.0.0
-git push origin v2.0.0
+```
+HB_Impianti/
+├── Hb_home.html      # Pagina principale
+├── app.js            # Logica applicazione
+├── style.css         # Stili
+├── main.js           # Processo Electron
+├── sw.js             # Service Worker (PWA)
+├── manifest.json     # Configurazione PWA
+├── package.json      # Dipendenze e build config
+└── img/              # Risorse grafiche
 ```
 
 ---
 
-## 🚀 Accesso all'Applicazione Web (PWA)
+## 📊 Stack Tecnologico
 
-**URL Diretto:**
-[https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html](https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html)
+| Categoria | Tecnologia |
+|-----------|------------|
+| Frontend | HTML5, CSS3, Vanilla JS |
+| Desktop | Electron 33.x |
+| Build | electron-builder 25.x |
+| Grafici | Chart.js 4.4.0 |
+| PDF | jsPDF 2.5.1 |
+| Icone | Font Awesome 7.0.1 |
+| Font | Inter (Google Fonts) |
+| Crittografia | Web Crypto API |
+| CI/CD | GitHub Actions |
+| Hosting | GitHub Pages |
 
-## 📱 Installazione su Dispositivi Mobili
-
-### Android (Chrome/Edge/Samsung Internet)
-1. Apri il link sopra nel browser
-2. Tocca il menu (⋮) in alto a destra
-3. Seleziona **"Installa app"** o **"Aggiungi a schermata Home"**
-4. Conferma l'installazione
-5. L'icona "HB Termoimpianti" apparirà nella home screen
-
-### iPhone/iPad (Safari)
-1. Apri il link sopra in Safari
-2. Tocca il pulsante **Condividi** (□↗) in basso
-3. Scorri e seleziona **"Aggiungi alla schermata Home"**
-4. Tocca **"Aggiungi"**
-5. L'icona "HB Termoimpianti" apparirà nella home screen
-
-## ✨ Caratteristiche
-
-- 📊 **Dashboard** con grafici in tempo reale
-- 👥 **Gestione Clienti** completa
-- 🔧 **Catalogo Materiali** personalizzabile
-- ⚒️ **Registro Interventi** con allegati
-- 📋 **Preventivi** professionali con PDF
-- 🧾 **Fatture** con tracciamento pagamenti
-- 📅 **Calendario Appuntamenti** mensile
-- 💾 **Backup/Ripristina** con unione intelligente anti-duplicati
-- 🔒 **Crittografia AES-256** per protezione dati
-- 📱 **PWA** - Funziona come app nativa
-- 🌐 **Offline** - Disponibile anche senza connessione
-- 🔄 **Responsive** - Ottimizzato per mobile, tablet e desktop
-
-## 🔐 Sicurezza
-
-- Crittografia end-to-end con AES-256
-- Derivazione chiave PBKDF2 con 100.000 iterazioni
-- Dati salvati localmente (nessun server)
-- Sistema di blocco con password opzionale
-- Auto-lock dopo 30 minuti di inattività
-
-## 💾 Gestione Dati
-
-- **Backup**: Esporta tutti i dati in formato JSON
-- **Ripristina**: Importa backup con due modalità:
-  - **UNISCI**: Aggiunge dati evitando duplicati
-  - **SOVRASCRIVI**: Sostituisce completamente i dati
-- **Rilevamento duplicati** intelligente per clienti, materiali, interventi, ecc.
-
-## 📊 Limiti di Archiviazione
-
-- Chrome/Edge: ~10MB
-- Firefox: ~10MB  
-- Safari: ~5MB
-- Capacità stimata: ~1.000 clienti + 5.000 interventi + 500 preventivi
-
-## 🛠️ Tecnologie Utilizzate
-
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Storage**: localStorage con wrapper
-- **Grafici**: Chart.js 4.4.0
-- **PDF**: jsPDF 2.5.1
-- **Icone**: Font Awesome 7.0.1
-- **Font**: Google Fonts (Inter)
-- **PWA**: Service Worker + Web App Manifest
-- **Crittografia**: Web Crypto API (AES-GCM, PBKDF2)
+---
 
 ## 📄 Licenze
 
-- **Codice Applicazione**: Proprietario - Tamburini Christofer
-- **Chart.js**: MIT License
-- **jsPDF**: MIT License
-- **Font Awesome Free**: SIL OFL 1.1 + MIT
-- **Google Fonts (Inter)**: SIL Open Font License
+| Componente | Licenza |
+|------------|---------|
+| Applicazione | Proprietario © Tamburini Christofer |
+| Chart.js | MIT |
+| jsPDF | MIT |
+| Font Awesome Free | SIL OFL 1.1 + MIT |
+| Inter Font | SIL OFL |
+| Electron | MIT |
 
-**Costo Totale**: 0€ - Tutte le librerie sono gratuite e open-source
+---
 
-## 👨‍💻 Sviluppatore
+## 👨‍💻 Autore
 
 **Tamburini Christofer**  
 Web Developer
 
 ---
 
-**Versione**: 2.0.0  
-**Data Rilascio**: 17 Novembre 2025  
-**Cliente**: HB Termoimpianti
+<div align="center">
+
+**Versione 2.1.0** • Gennaio 2026  
+*Sviluppato per HB Termoimpianti*
+
+</div>
