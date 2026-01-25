@@ -3171,7 +3171,9 @@ footer {
   /* === TABELLE MODERNE MOBILE === */
   .table-container {
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: visible !important;
+    max-height: none !important;
+    height: auto !important;
     margin: 12px 0;
     border-radius: 12px;
     border: 1px solid rgba(88, 166, 255, 0.15);
@@ -3197,8 +3199,7 @@ footer {
     letter-spacing: 0.5px;
     color: var(--accent-light);
     padding: 12px 8px;
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 10;
     border-bottom: 2px solid rgba(88, 166, 255, 0.2);
   }
