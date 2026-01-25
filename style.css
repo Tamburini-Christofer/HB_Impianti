@@ -2924,7 +2924,6 @@ footer {
     gap: 14px;
   }
 
-  /* Header responsive per tablet */
   .app-header {
     padding: 16px 20px;
   }
@@ -2943,7 +2942,6 @@ footer {
     font-size: 1.8rem;
   }
 
-  /* Tabs responsive per tablet */
   .tabs {
     padding: 0 16px;
     gap: 8px;
@@ -2958,7 +2956,6 @@ footer {
     display: block;
   }
 
-  /* Tabelle responsive per tablet */
   table {
     font-size: 0.9rem;
   }
@@ -2967,7 +2964,6 @@ footer {
     padding: 10px 8px;
   }
 
-  /* Button groups per tablet */
   .button-group {
     flex-wrap: wrap;
     gap: 12px;
@@ -2979,84 +2975,151 @@ footer {
   }
 }
 
-/* SMARTPHONE - iPhone, Android (fino a 768px) */
+/* ==================== SMARTPHONE MOBILE ==================== */
 @media screen and (max-width: 768px) {
-  /* Layout generale */
+  /* === LAYOUT GENERALE === */
   main {
-    padding: 0 12px 24px;
+    padding: 0 8px 24px;
     margin-top: 0;
   }
 
+  /* === CARD MODERNE === */
   .card {
-    padding: 20px;
-    margin-bottom: 16px;
-    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, var(--surface) 0%, rgba(30, 35, 50, 0.95) 100%);
+    border: 1px solid rgba(88, 166, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
-  /* Header mobile - Rimuovi completamente se presente */
+  .card h2, .card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(88, 166, 255, 0.2);
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* === HEADER MOBILE === */
   .app-header {
     display: none;
   }
 
-  /* Tabs mobile - Menu hamburger */
+  /* === MENU MOBILE MODERNO === */
   .tabs {
-    display: none !important; /* Nascondi il menu normale su mobile */
+    display: none !important;
   }
 
   .mobile-menu-toggle {
     display: flex !important;
-    margin: 8px 12px 8px 12px;
+    margin: 0;
+    padding: 16px 20px;
     border-radius: 0;
-    width: calc(100% - 24px);
+    width: 100%;
+    background: linear-gradient(180deg, var(--surface) 0%, rgba(20, 25, 35, 0.98) 100%);
+    border: none;
+    border-bottom: 1px solid rgba(88, 166, 255, 0.2);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .mobile-menu-toggle i {
+    color: var(--accent);
+    font-size: 1.2rem;
   }
 
   .mobile-menu-dropdown {
-    top: 72px;
+    top: 60px;
+    left: 8px;
+    right: 8px;
+    border-radius: 16px;
+    background: rgba(20, 25, 35, 0.98);
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
-  
-  /* Pulsanti backup mobile */
+
+  .mobile-menu-dropdown .tab {
+    padding: 16px 20px;
+    border-radius: 0;
+    margin: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-dropdown .tab:hover,
+  .mobile-menu-dropdown .tab:active {
+    background: rgba(88, 166, 255, 0.15);
+    transform: translateX(8px);
+  }
+
+  .mobile-menu-dropdown .tab.active {
+    background: linear-gradient(90deg, rgba(88, 166, 255, 0.2) 0%, transparent 100%);
+    border-left: 3px solid var(--accent);
+  }
+
+  .mobile-menu-dropdown .tab i {
+    width: 24px;
+    color: var(--accent);
+  }
+
+  /* === PULSANTI BACKUP COMPATTI === */
   .backup-button, .restore-button {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-    gap: 4px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    gap: 6px;
+    border-radius: 10px;
   }
   
   .backup-button span, .restore-button span {
     display: none;
   }
 
-  .tab i {
-    font-size: 1rem;
-  }
-
-  .tab span {
-    font-size: 0.75rem;
-  }
-
-  /* Grid responsive mobile */
+  /* === GRID RESPONSIVE === */
   .row {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  /* Due colonne per alcuni campi specifici */
   .row.two-cols {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* Inputs mobile */
+  /* === INPUTS MODERNI === */
   input, select, textarea {
-    padding: 12px 14px;
-    font-size: 16px; /* Previene zoom su iOS */
-    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    transition: all 0.3s ease;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    background: rgba(88, 166, 255, 0.05);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
   }
 
   label {
-    font-size: 0.8rem;
-    margin: 8px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 10px 0 6px;
+    color: var(--text-muted);
   }
 
-  /* Buttons mobile */
+  /* === BOTTONI TOUCH-FRIENDLY === */
   .button-group {
     flex-direction: column;
     gap: 10px;
@@ -3064,31 +3127,55 @@ footer {
 
   button {
     width: 100%;
-    padding: 14px 20px;
-    font-size: 0.9rem;
-    min-height: 48px; /* Touch target size */
+    padding: 16px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    min-height: 52px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
   }
 
-  /* Action buttons in due righe ma responsive */
+  button:active {
+    transform: scale(0.98);
+  }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--accent) 0%, #3d8bfd 100%);
+    box-shadow: 0 6px 20px rgba(88, 166, 255, 0.35);
+  }
+
+  button.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  button.danger {
+    background: linear-gradient(135deg, var(--danger) 0%, #d63031 100%);
+    box-shadow: 0 6px 20px rgba(255, 76, 76, 0.3);
+  }
+
+  /* === ACTION BUTTONS GRID === */
   .action-buttons {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 
   .action-buttons button {
-    padding: 10px 8px;
-    font-size: 0.8rem;
+    padding: 12px;
+    font-size: 0.85rem;
     min-width: auto;
+    min-height: 44px;
   }
 
-  /* Tabelle mobile - layout responsive */
+  /* === TABELLE MODERNE MOBILE === */
   .table-container {
     overflow-x: auto;
     overflow-y: visible;
-    margin: 8px 0;
-    border-radius: 0;
-    border: 1px solid var(--border);
+    margin: 12px 0;
+    border-radius: 12px;
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    background: rgba(0, 0, 0, 0.2);
     -webkit-overflow-scrolling: touch;
     display: block !important;
     max-width: 100%;
@@ -3096,69 +3183,79 @@ footer {
 
   table {
     width: 100%;
-    min-width: 500px;
+    min-width: 480px;
     font-size: 0.8rem;
-    border-collapse: collapse;
-  }
-
-  th, td {
-    padding: 8px 4px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 0.75rem;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
   th {
-    background: var(--surface-light);
-    font-weight: 600;
+    background: linear-gradient(180deg, rgba(88, 166, 255, 0.15) 0%, rgba(88, 166, 255, 0.05) 100%);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-light);
+    padding: 12px 8px;
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 2px solid rgba(88, 166, 255, 0.2);
   }
 
-  /* Nascondi alcune colonne su mobile */
-  .mobile-hide {
-    display: none !important;
+  td {
+    padding: 12px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.8rem;
   }
 
-  /* Stile alternato per le righe */
+  tbody tr {
+    transition: all 0.2s ease;
+  }
+
   tbody tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.02);
   }
 
-  tbody tr:hover {
-    background: var(--surface-light);
+  tbody tr:active {
+    background: rgba(88, 166, 255, 0.1);
   }
 
-  /* Compatta i pulsanti azioni */
-  .action-buttons {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
+  .mobile-hide {
+    display: none !important;
   }
 
+  /* === AZIONI TABELLA COMPATTE === */
   .action-buttons button {
-    padding: 6px 8px;
-    font-size: 0.7rem;
-    min-width: auto;
-    width: auto;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    border-radius: 8px;
   }
 
-  /* Search field mobile */
+  /* === SEARCH FIELD MODERNO === */
   .search-container {
     margin: 16px 0;
   }
 
   .search-field {
-    padding: 0 12px;
+    padding: 0 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(88, 166, 255, 0.15);
   }
 
   .search-field input {
-    padding: 12px 0;
-    font-size: 16px; /* Previene zoom */
+    padding: 14px 0;
+    font-size: 16px;
+    background: transparent;
+    border: none;
   }
 
-  /* Material selector mobile */
+  .search-field i {
+    color: var(--accent);
+  }
+
+  /* === MATERIAL SELECTOR === */
   .material-selector {
     flex-direction: column;
     align-items: stretch;
@@ -3169,42 +3266,195 @@ footer {
     min-width: auto;
   }
 
-  /* Dashboard mobile */
+  /* === DASHBOARD ACCATTIVANTE === */
   .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
-  .dashboard-stat {
+  .dashboard-stat, .stat-card {
     padding: 16px;
     text-align: center;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(88, 166, 255, 0.08) 0%, rgba(30, 35, 50, 0.9) 100%);
+    border: 1px solid rgba(88, 166, 255, 0.12);
   }
 
-  .stat-number {
-    font-size: 2rem;
+  .stat-number, .stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-light), #fff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
   }
 
   .chart-container {
     padding: 16px;
     margin: 16px 0;
+    border-radius: 14px;
   }
 
-  /* Grafici responsive */
   canvas {
     max-width: 100% !important;
     height: auto !important;
   }
+
+  /* === FOOTER MOBILE === */
+  .footer-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0 8px;
+  }
+
+  .footer-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .backup-button, .restore-button, .lock-button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* === MODAL MOBILE FULLSCREEN === */
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: 95vh;
+    margin: 10px;
+    border-radius: 20px 20px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+  }
+
+  .modal-header {
+    padding: 20px;
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(180deg, var(--surface-light) 0%, var(--surface) 100%);
+  }
+
+  .modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface);
+  }
+
+  /* === CALENDARIO MOBILE === */
+  .calendar-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .calendar-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .calendar-day {
+    min-height: 55px;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .calendar-day:active {
+    background: rgba(88, 166, 255, 0.15);
+  }
+
+  .day-number {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .calendar-day.today .day-number {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .appointment-item {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+
+  /* === APPOINTMENTS === */
+  .appointments-tabs {
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .appointments-tab {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    border-radius: 10px;
+  }
+
+  .appointment-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .appointment-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
-/* SMARTPHONE PICCOLI - iPhone SE, Android compatti (fino a 480px) */
+/* ==================== SMARTPHONE PICCOLI (max 480px) ==================== */
 @media screen and (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
   .card {
-    padding: 16px;
-    margin-bottom: 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .card h2, .card h3 {
+    font-size: 1rem;
   }
 
   .header-text h1 {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+  }
+
+  .mobile-menu-toggle {
+    padding: 14px 16px;
+    font-size: 0.95rem;
   }
 
   .tab {
@@ -3216,81 +3466,109 @@ footer {
   }
 
   button {
-    padding: 12px 16px;
-    font-size: 0.85rem;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+    min-height: 48px;
   }
 
   .action-buttons button {
-    padding: 8px 6px;
+    padding: 10px 8px;
     font-size: 0.75rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-number, .stat-value {
+    font-size: 1.5rem;
   }
 
   table {
     font-size: 0.75rem;
-    min-width: 400px;
+    min-width: 420px;
   }
 
   th, td {
-    padding: 6px 3px;
+    padding: 10px 6px;
     font-size: 0.7rem;
   }
 
-  /* Layout card per le tabelle su schermi molto piccoli */
-  .table-card-layout {
-    display: none;
-  }
+  /* === LAYOUT CARD EXTRA PICCOLO === */
+  @media screen and (max-width: 380px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
 
-  @media screen and (max-width: 400px) {
-    .table-container {
-      display: block !important;
-      border-radius: 0;
+    .row.two-cols {
+      grid-template-columns: 1fr;
     }
-    
-    .table-card-layout {
-      display: block;
-    }
-    
-    .table-card-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-small);
-      padding: 12px;
-      margin-bottom: 8px;
-    }
-    
-    .table-card-header {
-      font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 8px;
-      font-size: 0.9rem;
-    }
-    
-    .table-card-content {
-      font-size: 0.8rem;
-      line-height: 1.4;
-    }
-    
-    .table-card-actions {
-      margin-top: 10px;
-      text-align: right;
+
+    .action-buttons {
+      grid-template-columns: 1fr;
     }
   }
 
-  th, td {
-    padding: 6px 4px;
-  }
-
-  /* Search più compatto */
   .search-field {
-    padding: 0 10px;
+    padding: 0 12px;
   }
 
   .search-field input {
-    padding: 10px 0;
+    padding: 12px 0;
+  }
+
+  /* === CALENDARIO COMPATTO === */
+  .calendar-day {
+    min-height: 48px;
+    padding: 2px;
+  }
+
+  .day-number {
+    font-size: 0.75rem;
+  }
+
+  .appointment-item {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+  }
+
+  /* === APPOINTMENT CARDS === */
+  .appointment-title {
+    font-size: 0.9rem;
+  }
+
+  .appointment-datetime {
+    font-size: 0.75rem;
   }
 }
 
-/* ORIENTAMENTO LANDSCAPE PER TABLET */
+/* ==================== LANDSCAPE MOBILE ==================== */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .mobile-menu-toggle {
+    padding: 10px 16px;
+  }
+
+  .tabs {
+    padding: 6px;
+  }
+  
+  .card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ==================== ORIENTAMENTO LANDSCAPE TABLET ==================== */
 @media screen and (max-width: 1024px) and (orientation: landscape) {
   .row {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -3305,7 +3583,7 @@ footer {
   }
 }
 
-/* HIGH DPI DISPLAYS */
+/* ==================== HIGH DPI DISPLAYS ==================== */
 @media screen and (-webkit-min-device-pixel-ratio: 2), 
        screen and (min-resolution: 192dpi) {
   .logo {
@@ -3771,425 +4049,44 @@ body.electron {
 }
 
 /* ====================================
-   RESPONSIVE DESIGN - MOBILE & TABLET
+   PRINT STYLES
    ==================================== */
-
-/* -------------------- TABLET (768px - 1024px) -------------------- */
-@media screen and (max-width: 1024px) {
-  /* Layout principale */
-  main {
-    padding: 0 15px 30px;
-  }
-  
-  .card {
-    padding: 24px;
-  }
-  
-  /* Header container */
-  .header-container,
-  .footer-container {
-    padding: 0 15px;
-  }
-  
-  /* Tabs menu */
-  .tabs {
-    gap: 40px;
-    padding: 12px;
-  }
-  
-  .tab {
-    padding: 10px 16px;
-    font-size: 0.9rem;
-  }
-  
-  /* Griglia responsive */
-  .row {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-  }
-  
-  /* Tabelle */
-  table {
-    font-size: 0.9rem;
-  }
-  
-  th, td {
-    padding: 12px 10px;
-  }
-}
-
-/* -------------------- MOBILE (max 768px) -------------------- */
-@media screen and (max-width: 768px) {
-  /* Typography mobile */
-  body {
-    font-size: 14px;
-  }
-  
-  /* Layout principale */
-  main {
-    padding: 0 10px 20px;
-  }
-  
-  .card {
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  
-  /* Header mobile */
-  .header-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 0 10px;
-  }
-  
-  .logo {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .app-header h1 {
-    font-size: 1.4rem;
-  }
-  
-  .header-subtitle {
-    text-align: left;
-    font-size: 0.85rem;
-  }
-  
-  /* Tabs menu mobile - scroll orizzontale */
-  .tabs {
-    justify-content: flex-start;
-    overflow-x: auto;
-    gap: 8px;
-    padding: 8px;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .tab {
-    flex-shrink: 0;
-    padding: 10px 14px;
-    font-size: 0.85rem;
-  }
-  
-  .tab span {
-    display: none; /* Nascondi testo, mostra solo icone */
-  }
-  
-  .tab i {
-    font-size: 1.2rem;
-  }
-  
-  /* Mostra il testo solo per il tab attivo */
-  .tab.active span {
-    display: inline;
-    margin-left: 6px;
-  }
-  
-  /* Griglia mobile - 1 colonna */
-  .row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  /* Bottoni mobile */
-  button {
-    font-size: 0.9rem;
-    padding: 12px 18px;
-  }
-  
-  .button-group {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .button-group button {
-    width: 100%;
-  }
-  
-  /* Form inputs mobile */
-  input,
-  select,
-  textarea {
-    font-size: 16px; /* Previene zoom su iOS */
-    padding: 12px 14px;
-  }
-  
-  label {
-    font-size: 0.8rem;
-  }
-  
-  /* Tabelle responsive - scroll orizzontale */
-  .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  table {
-    min-width: 600px;
-    font-size: 0.85rem;
-  }
-  
-  th, td {
-    padding: 10px 8px;
-    font-size: 0.85rem;
-  }
-  
-  /* Nascondi colonne non essenziali su mobile */
-  .mobile-hide {
-    display: none;
-  }
-  
-  /* Footer mobile */
-  .footer-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 0 10px;
-  }
-  
-  .footer-info {
-    font-size: 0.85rem;
-  }
-  
-  .footer-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .backup-button,
-  .restore-button {
-    flex: 1;
-  }
-  
-  /* Calendario mobile */
-  .calendar-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .calendar-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  
-  .calendar-add-section,
-  .calendar-view {
-    min-width: 100%;
-  }
-  
-  .calendar-day {
-    min-height: 60px;
-    padding: 4px;
-    font-size: 0.8rem;
-  }
-  
-  .day-number {
-    font-size: 0.8rem;
-  }
-  
-  .appointment-item {
-    font-size: 0.65rem;
-    padding: 2px 4px;
-  }
-  
-  /* Appointments tabs mobile */
-  .appointments-tabs {
-    gap: 8px;
-  }
-  
-  .appointments-tab {
-    padding: 10px 16px;
-    font-size: 0.9rem;
-  }
-  
-  .appointment-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-  }
-  
-  .appointment-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  /* Modal mobile */
-  .modal-content {
-    width: 95vw;
-    max-height: 85vh;
-    margin: 20px;
-  }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 16px;
-  }
-  
-  /* Dashboard cards mobile */
-  .stat-card {
-    padding: 16px;
-  }
-  
-  .stat-label {
-    font-size: 0.75rem;
-  }
-  
-  .stat-value {
-    font-size: 1.4rem;
-  }
-  
-  /* Quote/Invoice items mobile */
-  .quote-selection-item {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  /* Material selector mobile */
-  .material-selector {
-    flex-direction: column;
-  }
-  
-  .material-selector button {
-    width: 100%;
-  }
-}
-
-/* -------------------- MOBILE PICCOLO (max 480px) -------------------- */
-@media screen and (max-width: 480px) {
-  /* Typography extra small */
-  body {
-    font-size: 13px;
-  }
-  
-  /* Card mobile piccolo */
-  .card {
-    padding: 12px;
-    border-radius: 12px;
-  }
-  
-  /* Header extra small */
-  .app-header h1 {
-    font-size: 1.2rem;
-  }
-  
-  .header-subtitle {
-    font-size: 0.75rem;
-  }
-  
-  /* Tabs solo icone */
-  .tab {
-    padding: 10px;
-  }
-  
-  .tab.active {
-    padding: 10px 12px;
-  }
-  
-  /* Bottoni più compatti */
-  button {
-    font-size: 0.85rem;
-    padding: 10px 14px;
-  }
-  
-  .btn-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
-  }
-  
-  /* Footer compatto */
-  .footer-info span {
-    font-size: 0.75rem;
-  }
-  
-  .backup-button span,
-  .restore-button span {
-    display: none; /* Solo icone */
-  }
-  
-  /* Calendario ultra compatto */
-  .calendar-day {
-    min-height: 50px;
-    padding: 2px;
-  }
-  
-  .day-number {
-    font-size: 0.7rem;
-  }
-  
-  .appointment-item {
-    font-size: 0.6rem;
-  }
-  
-  /* Tabelle scroll obbligatorio */
-  table {
-    min-width: 500px;
-    font-size: 0.75rem;
-  }
-  
-  th, td {
-    padding: 8px 6px;
-  }
-  
-  /* Appointment cards compatte */
-  .appointment-title {
-    font-size: 0.9rem;
-  }
-  
-  .appointment-datetime {
-    font-size: 0.75rem;
-  }
-}
-
-/* -------------------- LANDSCAPE MOBILE -------------------- */
-@media screen and (max-height: 500px) and (orientation: landscape) {
-  /* Ottimizza per landscape mobile */
-  .tabs {
-    padding: 6px;
-    margin-bottom: 15px;
-  }
-  
-  .card {
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .modal-content {
-    max-height: 90vh;
-  }
-}
-
-/* -------------------- PRINT STYLES -------------------- */
 @media print {
-  /* Nasconde elementi non necessari in stampa */
   .tabs,
   .button-group,
   button,
   .backup-button,
   .restore-button,
+  .lock-button,
   .app-footer,
   .appointment-actions,
-  .search-container {
+  .search-container,
+  .mobile-menu-toggle,
+  .mobile-menu-dropdown {
     display: none !important;
   }
   
-  /* Ottimizza per stampa */
   body {
     background: white;
     color: black;
+    font-size: 12pt;
   }
   
   .card {
-    border: 1px solid #ddd;
+    border: 1px solid #ccc;
     box-shadow: none;
     page-break-inside: avoid;
+    padding: 12px;
+    margin-bottom: 12px;
   }
   
   table {
     page-break-inside: avoid;
+    font-size: 10pt;
+  }
+
+  th, td {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
   }
 }
