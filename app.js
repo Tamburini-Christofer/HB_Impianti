@@ -2616,7 +2616,7 @@ function renderQuotes() {
     
     updateQuoteItemsTable();
     
-    alert(`Materiale aggiunto: ${newItem.descrizione}\nQuantità: ${qty}\nPrezzo unitario: ${currency(prezzoUnitario)}\nTotale: ${currency(totale)}`);
+    // alert rimosso: feedback visivo non invasivo
   };
 
   document.getElementById("addQuoteItem").onclick = () => {
