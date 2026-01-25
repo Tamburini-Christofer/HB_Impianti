@@ -190,6 +190,8 @@ body {
   background: rgba(240, 136, 62, 0.1);
   border-color: rgba(240, 136, 62, 0.3);
   color: var(--warning);
+  padding: 6px 12px;
+  font-size: 0.75rem;
 }
 
 .lock-button:hover {
@@ -1921,12 +1923,15 @@ button.success:hover {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
+  transition: var(--transition);
 }
 
 .btn-icon.secondary:hover {
-  background: var(--surface-light);
+  background: rgba(88, 166, 255, 0.15);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-light);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
 }
 
 /* -------------------- PRIMARY/SECONDARY BUTTONS -------------------- */
@@ -3000,7 +3005,9 @@ footer {
 
   .mobile-menu-toggle {
     display: flex !important;
-    margin-bottom: 0;
+    margin: 8px 12px 8px 12px;
+    border-radius: 0;
+    width: calc(100% - 24px);
   }
 
   .mobile-menu-dropdown {
@@ -3078,10 +3085,13 @@ footer {
   /* Tabelle mobile - layout responsive */
   .table-container {
     overflow-x: auto;
-    margin: 12px 0;
-    border-radius: var(--radius-small);
+    overflow-y: visible;
+    margin: 8px 0;
+    border-radius: 0;
     border: 1px solid var(--border);
     -webkit-overflow-scrolling: touch;
+    display: block !important;
+    max-width: 100%;
   }
 
   table {
@@ -3232,7 +3242,8 @@ footer {
 
   @media screen and (max-width: 400px) {
     .table-container {
-      display: none;
+      display: block !important;
+      border-radius: 0;
     }
     
     .table-card-layout {
