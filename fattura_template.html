@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fattura - Template dinamico</title>
+    <style>
+      :root {
+        --bg: #fff;
+        --muted: #666;
+        --accent: #0b63ff;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      body {
+        background: #e9e9e9;
+        margin: 0;
+        padding: 28px;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #page-container {
+        width: 794px;
+        margin: 0;
+        background: var(--bg);
+        padding: 36px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        gap: 18px;
+      }
+      .header-left{flex:1}
+      .copy-note{color:var(--muted);font-size:12px;margin-top:8px}
+      .header-right{width:360px;text-align:right}
+      .recipient-label{color:var(--muted);font-size:13px}
+      .recipient-name{font-size:18px;font-weight:800;color:#222}
+      .summary-row{display:flex;gap:18px;margin:24px 0 14px}
+      .summary-box{flex:1;border-left:4px solid #d0d0d0;padding:6px 12px;background:transparent}
+      .summary-label{color:var(--muted);font-weight:700;font-size:13px}
+      .summary-value{font-size:20px;font-weight:800;margin-top:6px}
+      .seller {
+        max-width: 380px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .seller h2 {
+        margin: 0 0 6px;
+        font-size: 20px;
+        color: #17a2ff;
+      }
+      .seller img.logo {
+        width: 64px;
+        height: auto;
+        border-radius: 6px;
+      }
+      .meta {
+        text-align: right;
+      }
+      .meta .title {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      .meta div {
+        color: var(--muted);
+      }
+      
+      table.items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 28px;
+        font-size: 14px;
+      }
+      table.items thead th {
+        background: #efefef;
+        padding: 12px 10px;
+        text-align: left;
+        font-weight: 700;
+        border-bottom: 2px solid #e0e0e0;
+      }
+      table.items td,
+      table.items th {
+        padding: 12px;
+        border-bottom: 1px dashed #ddd;
+      }
+      table.items tbody tr:nth-child(even) {
+        background: #fafafa;
+      }
+      table.items tbody tr.section-row td {
+        background: #f2f2f2;
+        font-weight: 700;
+        border-top: 1px solid #e0e0e0;
+      }
+      table.items td.right,
+      table.items th.right {
+        text-align: right;
+      }
+      .article-code { font-size:12px; color:var(--muted); margin-bottom:6px; }
+      table.items th.um,
+      table.items td.um {
+        width: 80px;
+        text-align: left;
+      }
+      table.items th.qty,
+      table.items td.qty {
+        width: 80px;
+        text-align: center;
+      }
+      table.items th.unit,
+      table.items td.unit {
+        width: 130px;
+        text-align: right;
+      }
+      table.items th.iva,
+      table.items td.iva {
+        width: 80px;
+        text-align: center;
+      }
+      table.items th.total,
+      table.items td.total {
+        width: 130px;
+        text-align: right;
+        font-weight: 700;
+      }
+      .totals {
+        margin-top: 28px;
+        display: flex;
+        justify-content: flex-end;
+      }
+      .totals .totals-box {
+        width: 360px;
+        border-collapse: collapse;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.03);
+      }
+      .totals .totals-box td {
+        padding: 10px 14px;
+      }
+      .totals .row-gray td {
+        background: #efefef;
+        color: #222;
+        font-weight: 700;
+      }
+      .totals .label {
+        color: #222;
+      }
+      .totals .amount {
+        width: 160px;
+        text-align: right;
+        font-weight: 700;
+      }
+      .totals .final-row td {
+        background: #17a2ff90;
+        color: #000;
+        border-top: 0;
+        border-bottom: 0;
+      }
+      .totals .final-row .amount {
+        font-size: 20px;
+        color: #000;
+      }
+      .notes {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      /* VAT breakdown table */
+      .vat-summary { margin-top: 18px; }
+      table.vat-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+      table.vat-table thead th { background: #f7f7f7; padding: 8px 10px; text-align: left; font-weight:700; border-bottom:1px solid #e0e0e0 }
+      table.vat-table td, table.vat-table th { padding: 8px 10px; border-bottom:1px dashed #ddd }
+      table.vat-table td.center { text-align:center }
+      table.vat-table td.right { text-align:right }
+      .header-right > div { margin-top: 6px; }
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        padding: 8px 12px;
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="page-container">
+      <header>
+        <div class="header-left">
+          <div class="seller">
+            <img src="img/logo.jpg" alt="Logo" class="logo" />
+            <div>
+              <h2 id="seller_name">HB Termoimpianti</h2>
+              <div id="seller_owner" class="muted">Brayan Hernandez</div>
+              <div id="seller_vat" class="muted">A capo P.IVA 02625040221</div>
+              <div id="seller_address" class="muted">
+                Via Trapione 16, Arco 38062 TN
+              </div>
+              <div id="seller_contact" class="muted">
+                Tel 3452104515<br />Email:
+                <a
+                  href="mailto:hbtermoimpianti@hotmail.com"
+                  style="text-decoration: underline; color: inherit"
+                  >hbtermoimpianti@hotmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="copy-note" style="align-self:center;margin:0 12px">Copia di cortesia</div>
+        <div class="header-right">
+          <div class="recipient-label">Destinatario</div>
+            <div id="client_name" class="recipient-name">NOME CLIENTE</div>
+            <div id="client_address" class="muted" style="margin-top:8px">Indirizzo cliente</div>
+            <div id="client_vat" class="muted">CF / P.IVA</div>
+            <div id="client_contact" class="muted" style="margin-top:6px">Tel / Email</div>
+            <div style="margin-top:8px" class="muted">Sede</div>
+            <div id="client_sede" class="muted">Via fornasetta 45</div>
+            <div id="client_full" class="muted" style="margin-top:6px">Via fornasetta 45 38066 RIVA DEL GARDA (TN) C.F:ZPDGTN94C01H330W</div>
+          
+        </div>
+      </header>
+      <div class="summary-row">
+      
+        <div class="summary-box">
+          <div class="summary-label">Totale</div>
+          <div id="summary_total" class="summary-value">€ 0,00</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Numero</div>
+          <div id="summary_number" class="summary-value">-</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Data</div>
+          <div id="summary_date" class="summary-value">-</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Scadenza</div>
+          <div id="summary_due" class="summary-value">-</div>
+        </div>
+      </div>
+
+      
+
+      <table class="items" id="items_table">
+        <thead>
+            <tr>
+              <th>Descrizione</th>
+              <th class="um">Unità</th>
+              <th class="qty">Quantità</th>
+              <th class="unit right">Importo U.</th>
+              <th class="iva">IVA</th>
+              <th class="total right">Importo</th>
+            </tr>
+        </thead>
+        <tbody id="items_body">
+          <!-- righe generate dinamicamente -->
+        </tbody>
+      </table>
+
+      <div class="vat-summary">
+        <h4 style="margin:0 0 6px">Aliquote IVA</h4>
+        <table class="vat-table">
+          <thead>
+            <tr>
+              <th>Aliquote IVA</th>
+              <th>Codice</th>
+              <th class="right">Imponibile</th>
+              <th class="center">%</th>
+              <th class="right">Importo</th>
+              <th class="right">Arrot.</th>
+            </tr>
+          </thead>
+          <tbody id="vat_body">
+            <!-- righe calcolate dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="totals">
+        <table class="totals-box">
+          <tr class="row-gray">
+            <td class="label">Imponibile</td>
+            <td class="amount" id="subtotal">€ 0,00</td>
+          </tr>
+          <tr class="row-gray">
+            <td class="label">Totale IVA</td>
+            <td class="amount" id="tax">€ 0,00</td>
+          </tr>
+          <tr class="final-row">
+            <td class="label">Totale</td>
+            <td class="amount" id="total">€ 0,00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="conditions">
+        <h3 style="margin-top: 18px; margin-bottom: 8px">Modalità Pagamento</h3>
+        <div>Bonifico 30 giorni</div>
+        <div style="margin-top: 8px">Ns.banca BANCA - IBAN: IT82R0802635320000006108906</div>
+
+        <h3 style="margin-top: 18px; margin-bottom: 8px">Dati Societari</h3>
+        <div>HERNANDEZ SORACA BRAYAN - P.I.: 02625040221 - C.F.: HRNBYN88P19Z604L</div>
+        <div style="margin-top:6px">VIA TRAPIONE 16 38062 ARCO Email: brayan88@pec.it</div>
+      </div>
+
+      <!-- Azioni rimosse per eliminare pulsanti demo ed export dalla vista -->
+    </div>
+
+    <script>
+      // Funzioni di utilità per popolare il template
+      function formatCurrency(v) {
+        return (
+          Number(v || 0).toLocaleString("it-IT", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + " €"
+        );
+      }
+
+      function formatDateDDMMYY(d) {
+        if (!d) return '';
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return d;
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        return dd + '/' + mm + '/' + yyyy;
+      }
+
+      function populateInvoice(data) {
+        document.getElementById("seller_name").textContent =
+          data.seller.name || "";
+        document.getElementById("seller_address").textContent =
+          data.seller.address || "";
+        document.getElementById("seller_vat").textContent =
+          data.seller.vat || "";
+        const elInvNum = document.getElementById("invoice_number");
+        if (elInvNum) elInvNum.textContent = data.invoice && data.invoice.number ? data.invoice.number : "";
+        const elInvDate = document.getElementById("invoice_date");
+        if (elInvDate) elInvDate.textContent = data.invoice && data.invoice.date ? data.invoice.date : "";
+        const elClientName = document.getElementById("client_name");
+        if (elClientName) elClientName.innerHTML = "<strong>" + (data.client && data.client.name ? data.client.name : "") + "</strong>";
+        const elClientAddr = document.getElementById("client_address");
+        if (elClientAddr) elClientAddr.textContent = (data.client && data.client.address) ? data.client.address : "";
+        const elClientVat = document.getElementById("client_vat");
+        if (elClientVat) elClientVat.textContent = (data.client && data.client.vat) ? data.client.vat : "";
+        const elClientContact = document.getElementById("client_contact");
+        if (elClientContact) {
+          const phone = (data.client && (data.client.phone || data.client.telefono)) ? (data.client.phone || data.client.telefono) : '';
+          const email = (data.client && (data.client.email || data.client.mail)) ? (data.client.email || data.client.mail) : '';
+          let contactHtml = '';
+          if (phone) contactHtml += phone;
+          if (email) contactHtml += (contactHtml ? '<br/>' : '') + '<a href="mailto:' + email + '" style="text-decoration: underline; color: inherit">' + email + '</a>';
+          elClientContact.innerHTML = contactHtml;
+        }
+        const elPayment = document.getElementById("payment_terms");
+        if (elPayment) elPayment.textContent = data.invoice.terms || "";
+        // calcola scadenza: usa data.invoice.due se presente, altrimenti 30 giorni dopo invoice.date
+        let computedDue = '';
+        if (data.invoice && data.invoice.due) {
+          computedDue = data.invoice.due;
+        } else if (data.invoice && data.invoice.date) {
+          const d = new Date(data.invoice.date);
+          if (!isNaN(d.getTime())) {
+            d.setDate(d.getDate() + 30);
+            computedDue = d.toISOString().slice(0,10);
+          }
+        }
+        const elDue = document.getElementById("due_date");
+        if (elDue) elDue.textContent = computedDue ? formatDateDDMMYY(computedDue) : "";
+
+        // popola informazioni cliente nel header-right (Sede e riga completa)
+        const elSede = document.getElementById('client_sede');
+        const elFull = document.getElementById('client_full');
+        const client = data.client || {};
+        if (elSede) elSede.textContent = client.sede || client.address || '';
+        if (elFull) {
+          const addr = client.address || '';
+          const cap = client.postal || client.cap || '';
+          const city = client.city || '';
+          const prov = client.province || client.prov || '';
+          const cf = client.cf || client.vat || client.codicefiscale || '';
+          const location = [cap, city, prov ? '(' + prov.toUpperCase() + ')' : ''].filter(Boolean).join(' ');
+          let full = addr;
+          if (location) full += (full ? ' ' : '') + location;
+          if (cf) full += (full ? ' ' : '') + 'C.F:' + cf;
+          elFull.textContent = full;
+        }
+        // items
+        const tbody = document.getElementById("items_body");
+        tbody.innerHTML = "";
+        let subtotal = 0;
+        let vatTotal = 0;
+        (data.items || []).forEach((it) => {
+          const tr = document.createElement("tr");
+          const itemTotal = (it.qty || 0) * (it.unit || 0);
+          subtotal += itemTotal;
+          const itemVatRate = typeof it.vat === 'number' ? it.vat : (typeof data.tax === 'number' ? data.tax : 10);
+          const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
+          vatTotal += itemVatAmount;
+          tr.innerHTML =
+            '<td class="desc">' +
+            (it.article ? '<div class="article-code">' + it.article + '</div>' : '') +
+            (it.desc || "") +
+            "</td>" +
+            '<td class="um">' +
+            (it.unitName || "") +
+            "</td>" +
+            '<td class="qty">' +
+            (it.qty || 0) +
+            "</td>" +
+            '<td class="unit right">' +
+            formatCurrency(it.unit || 0) +
+            "</td>" +
+            '<td class="iva">' +
+            (typeof it.vat === 'number' ? formatCurrency(itemVatAmount) : (it.vat || '')) +
+            "</td>" +
+            '<td class="total right">' +
+            formatCurrency(itemTotal) +
+            "</td>";
+          tbody.appendChild(tr);
+        });
+        // Raggruppa per aliquota IVA per il riepilogo
+        const vatMap = {};
+        (data.items || []).forEach((it) => {
+          const itemTotal = (it.qty || 0) * (it.unit || 0);
+          const itemVatRate = typeof it.vat === 'number' ? it.vat : (typeof data.tax === 'number' ? data.tax : 10);
+          const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
+          const key = String(itemVatRate);
+          if (!vatMap[key]) vatMap[key] = { base: 0, amount: 0 };
+          vatMap[key].base += itemTotal;
+          vatMap[key].amount += itemVatAmount;
+        });
+        const vatBody = document.getElementById('vat_body');
+        if (vatBody) {
+          vatBody.innerHTML = '';
+          // ordina le aliquote per valore decrescente
+          Object.keys(vatMap).sort((a,b)=>Number(b)-Number(a)).forEach(rateKey => {
+            const g = vatMap[rateKey];
+            const roundedAmount = Math.round(g.amount * 100) / 100;
+            const rounding = (roundedAmount - g.amount);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>Aliquota ${rateKey}%</td><td class="center">${rateKey}</td><td class="right">${formatCurrency(g.base)}</td><td class="center">${rateKey}%</td><td class="right">${formatCurrency(g.amount)}</td><td class="right">${formatCurrency(rounding)}</td>`;
+            vatBody.appendChild(tr);
+          });
+        }
+        // usa vatTotal calcolata sulle righe, altrimenti fallback a data.tax (default 10%)
+        const tax = vatTotal || (typeof data.tax === "number" ? (subtotal * data.tax) / 100 : (subtotal * 10) / 100);
+        const total = subtotal + tax;
+        const elSubtotal = document.getElementById("subtotal");
+        if (elSubtotal) elSubtotal.textContent = formatCurrency(subtotal);
+        const elTax = document.getElementById("tax");
+        if (elTax) elTax.textContent = formatCurrency(tax);
+        const elTotal = document.getElementById("total");
+        if (elTotal) elTotal.textContent = formatCurrency(total);
+        // popola la riga riassuntiva in header
+        const sTotal = document.getElementById('summary_total'); if(sTotal) sTotal.textContent = formatCurrency(total);
+        const sNum = document.getElementById('summary_number'); if(sNum) sNum.textContent = (data.invoice && data.invoice.number) ? data.invoice.number : '-';
+        const sDate = document.getElementById('summary_date'); if(sDate) sDate.textContent = (data.invoice && data.invoice.date) ? formatDateDDMMYY(data.invoice.date) : '-';
+        const sDue = document.getElementById('summary_due'); if(sDue) sDue.textContent = computedDue ? formatDateDDMMYY(computedDue) : '-';
+        const recipName = document.getElementById('recipient_name'); if(recipName) recipName.textContent = (data.client && data.client.name) ? data.client.name : '';
+        const recipAddr = document.getElementById('recipient_address'); if(recipAddr) recipAddr.textContent = (data.client && data.client.address) ? data.client.address : '';
+        const notesEl = document.getElementById("notes");
+        if (notesEl) notesEl.textContent = data.notes || "";
+      }
+
+      // (no demo buttons in this template)
+
+      // se esiste invoiceData in localStorage, popolalo all'apertura
+      try {
+        const stored = localStorage.getItem("invoiceData");
+        if (stored) populateInvoice(JSON.parse(stored));
+      } catch (e) {
+        /* ignore */
+      }
+    </script>
+
+    <!-- Inclusione CDN necessarie per l'export PDF (permette apertura standalone) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="generate_invoice.js"></script>
+  </body>
+</html>
