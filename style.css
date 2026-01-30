@@ -22,7 +22,6 @@
                               gap: 8px !important;
                             }
                             .action-buttons button {
-                              width: 100% !important;
                               min-width: 0 !important;
                               box-sizing: border-box !important;
                             }
@@ -2899,7 +2898,7 @@ textarea {
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-bright);
   margin-bottom: 4px;

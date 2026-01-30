@@ -1,0 +1,40 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.upload.outputs.artifact-name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create zip
+        run: |
+          ZIP_NAME=hb_impianti-${GITHUB_REF_NAME:-main}.zip
+          # Exclude .git and node_modules
+          zip -r "$ZIP_NAME" . -x '.git/*' 'node_modules/*'
+      - name: Upload artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: hb_impianti-${{ github.ref_name || 'main' }}.zip
+          path: hb_impianti-${{ github.ref_name || 'main' }}.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release and upload ZIP
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: hb_impianti-${{ github.ref_name }}.zip

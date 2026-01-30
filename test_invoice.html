@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Test Fattura</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- Carica le librerie usate dal generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://raw.githack.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.min.js"></script>
+  <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}</style>
+</head>
+<body>
+  <h2>Test: genera fattura</h2>
+  <div id="preview" style="border:1px solid #ddd;padding:12px;margin-bottom:12px;background:#fff"></div>
+  <button id="btnRender">Mostra HTML</button>
+  <button id="btnExport">Esporta PDF</button>
+  <script src="fattura_pdf.js"></script>
+  <script>
+    const sampleInvoice = {
+      numero: 'F-2026/001',
+      data: '2026-01-30',
+      scadenza: '2026-02-28',
+      voci: [
+        { quantita: 1, descrizione: 'Intervento tecnico', prezzo: 120.00, totale: 120.00 },
+        { quantita: 2, descrizione: 'Materiale A\ncon dettaglio', prezzo: 15.5, totale: 31.00 }
+      ],
+      imponibile: 151.00,
+      iva: 33.22,
+      totale: 184.22,
+      aliquota: 22,
+      pagamento: 'Bonifico bancario 30 gg',
+      banca: 'Banca Esempio',
+      iban: 'IT00X0000000000000000000000',
+      societa: 'Demo SRL',
+      piva: '01234567890',
+      cfSocieta: 'CFDEMO'
+    };
+
+    const sampleClient = {
+      ragioneSociale: 'Cliente Demo S.r.l.',
+      indirizzo: 'Via Prova 1',
+      cap: '00100',
+      citta: 'Roma',
+      provincia: 'RM',
+      cf: 'CLIDEMO'
+    };
+
+    document.getElementById('btnRender').addEventListener('click', () => {
+      const html = window.generaFatturaHTMLString(sampleInvoice, sampleClient);
+      document.getElementById('preview').innerHTML = html;
+    });
+
+    document.getElementById('btnExport').addEventListener('click', async () => {
+      await generaFatturaPDF(sampleInvoice, sampleClient);
+    });
+  </script>
+</body>
+</html>

@@ -6,15 +6,22 @@
 // ==================== PWA SERVICE WORKER ====================
 // Registrazione del Service Worker per funzionalità PWA
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
-      .then((registration) => {
-        console.log('SW registrato con successo: ', registration.scope);
-      })
-      .catch((registrationError) => {
-        console.log('Errore registrazione SW: ', registrationError);
-      });
-  });
+  // Non registrare se la pagina è servita da file:// o origine nulla (es. apertura diretta dal filesystem)
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '::1';
+  const isSecureProtocol = location.protocol === 'https:' || location.protocol === 'http:';
+  if (isSecureProtocol && (location.protocol === 'https:' || isLocalhost)) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then((registration) => {
+          console.log('SW registrato con successo: ', registration.scope);
+        })
+        .catch((registrationError) => {
+          console.log('Errore registrazione SW: ', registrationError);
+        });
+    });
+  } else {
+    console.info('Service Worker non registrato: la pagina non è servita via HTTPS o localhost.');
+  }
 }
 
 // ==================== ELECTRON INTEGRATION ====================
@@ -1550,7 +1557,7 @@ function renderMaterials() {
         <div><label>Q.tà</label><input id="m_qta" type="number"></div>
         <div><label>Costo Unit.</label><input id="m_costo" type="number"></div>
         <div><label class="required">Prezzo Unit.</label><input id="m_prezzo" type="number" required></div>
-        <div><label>IVA %</label><input id="m_iva" type="number" value="22"></div>
+        <div><label>IVA %</label><input id="m_iva" type="number" value="10"></div>
       </div>
 
       <div class="button-group">
@@ -1622,7 +1629,7 @@ function renderMaterials() {
       qta: Number(m_qta.value || 0),
       costo: Number(m_costo.value || 0),
       prezzo: Number(prezzo),
-      iva: Number(m_iva.value || 22)
+      iva: Number(m_iva.value || 10)
     });
     setStorage("materials", materials);
     renderMaterials();
@@ -1682,7 +1689,7 @@ function editMaterial(id) {
       document.getElementById('m_qta').value = '';
       document.getElementById('m_costo').value = '';
       document.getElementById('m_prezzo').value = '';
-      document.getElementById('m_iva').value = '22';
+      document.getElementById('m_iva').value = '10';
       
       renderMaterials(); // Ricarica la vista
     }
@@ -1719,7 +1726,7 @@ function renderJobs() {
         <div><label class="required">Ore</label><input id="j_ore" type="number" required></div>
         <div><label>Tariffa €/h</label><input id="j_tariffa" type="number" value="35"></div>
         <div><label>Sconto €</label><input id="j_sconto" type="number" value="0"></div>
-        <div><label>IVA %</label><input id="j_iva" type="number" value="22"></div>
+        <div><label>IVA %</label><input id="j_iva" type="number" value="10"></div>
       </div>
       
       <div class="row">
@@ -1909,7 +1916,7 @@ function saveJobData(fileData) {
       ore: Number(document.getElementById('j_ore').value),
       tariffa: Number(document.getElementById('j_tariffa').value),
       sconto: Number(document.getElementById('j_sconto').value || 0),
-      iva: Number(document.getElementById('j_iva').value || 22),
+      iva: Number(document.getElementById('j_iva').value || 10),
       pagato: false,
       files: fileData,
       createdAt: new Date().toISOString()
@@ -1917,6 +1924,18 @@ function saveJobData(fileData) {
     
     jobs.push(newJob);
     setStorage("jobs", jobs);
+    // Aggiorna la sede operativa del cliente con il luogo dell'intervento
+    try {
+      const clientToUpdate = clients.find(c => c.id === newJob.clienteId);
+      if (clientToUpdate && newJob.luogo) {
+        clientToUpdate.sede_operativa = newJob.luogo;
+        // Mantieni anche `sede` per compatibilità con template
+        clientToUpdate.sede = clientToUpdate.sede || newJob.luogo;
+        setStorage('clients', clients);
+      }
+    } catch (e) {
+      console.warn('Impossibile aggiornare la sede cliente:', e);
+    }
     
     // Reset form
     document.getElementById('j_data').value = '';
@@ -1926,7 +1945,7 @@ function saveJobData(fileData) {
     document.getElementById('j_ore').value = '';
     document.getElementById('j_tariffa').value = '35';
     document.getElementById('j_sconto').value = '0';
-    document.getElementById('j_iva').value = '22';
+    document.getElementById('j_iva').value = '10';
     const filesInput = document.getElementById('j_files');
     if (filesInput) {
       filesInput.value = '';
@@ -2227,7 +2246,7 @@ function editJob(id) {
         ore: Number(document.getElementById('j_ore').value),
         tariffa: Number(document.getElementById('j_tariffa').value),
         sconto: Number(document.getElementById('j_sconto').value),
-        iva: Number(document.getElementById('j_iva').value),
+        iva: Number(document.getElementById('j_iva').value || 10),
         pagato: job.pagato // Mantieni lo stato di pagamento
       };
       setStorage("jobs", jobs);
@@ -2238,7 +2257,7 @@ function editJob(id) {
       document.getElementById('j_ore').value = '';
       document.getElementById('j_tariffa').value = '35';
       document.getElementById('j_sconto').value = '0';
-      document.getElementById('j_iva').value = '22';
+      document.getElementById('j_iva').value = '10';
       
       renderJobs(); // Ricarica la vista
     }
@@ -2410,9 +2429,21 @@ function togglePaid(id) {
 
 // ---------- Render Quotes ----------
 function renderQuotes() {
-  // Aggiorna la variabile materials dal localStorage per assicurarsi di avere i dati più recenti
+  // Aggiorna le variabili dal localStorage per assicurarsi di avere i dati più recenti
   materials = getStorage("materials", []);
   clients = getStorage("clients", []);
+  quotes = getStorage("quotes", []);
+  // Se non troviamo preventivi sotto 'quotes', prova chiavi alternative (compatibilità)
+  if ((!quotes || quotes.length === 0) && localStorage.getItem('preventivi')) {
+    try {
+      const alt = JSON.parse(localStorage.getItem('preventivi')) || [];
+      if (alt.length) {
+        quotes = alt;
+        setStorage('quotes', quotes);
+        console.info('Caricati preventivi da chiave alternativa "preventivi"');
+      }
+    } catch (e) { /* ignore parse errors */ }
+  }
   
   content.innerHTML = `
     <div class="card">
@@ -2472,7 +2503,7 @@ function renderQuotes() {
               <td></td>
             </tr>
             <tr style="font-weight: bold; background: var(--surface-light);">
-              <td colspan="3" class="right">IVA 22%:</td>
+              <td colspan="3" class="right">IVA 10%:</td>
               <td class="right" id="quote-iva">€ 0,00</td>
               <td></td>
             </tr>
@@ -2487,7 +2518,6 @@ function renderQuotes() {
 
       <div class="button-group">
         <button id="saveQuote" class="primary"><i class="fas fa-save"></i> Salva Preventivo</button>
-        <button id="exportQuotes" class="pdf"><i class="fas fa-file-pdf"></i> Esporta PDF</button>
       </div>
 
       <table id="quotesTable" style="margin-top: 30px;">
@@ -2725,7 +2755,7 @@ function renderQuotes() {
     alert('✅ Preventivo salvato con successo!');
   };
 
-  document.getElementById("exportQuotes").onclick = () => exportQuotesToPDF();
+  // exportQuotes button removed — bulk export disabled
 
 }
 
@@ -2759,7 +2789,7 @@ function updateQuoteItemsTable() {
     const totale = Number(item.totale) || 0;
     return sum + totale;
   }, 0);
-  const iva = subtotal * 0.22;
+  const iva = subtotal * 0.10;
   const total = subtotal + iva;
   
   const subtotalEl = document.getElementById('quote-subtotal');
@@ -2787,15 +2817,17 @@ function updateQuotesTable() {
   const tbody = document.querySelector("#quotesTable tbody");
   tbody.innerHTML = quotes.map(q => {
     const client = clients.find(c => c.id === q.clienteId);
-    const total = q.voci.reduce((sum, v) => sum + v.totale, 0) * 1.22; // Con IVA
+    const items = q.voci || [];
+    const total = (items.reduce((sum, v) => sum + (Number(v?.totale) || 0), 0)) * 1.10; // Con IVA al 10%
+    const stato = q.stato || 'In attesa';
     return `
       <tr>
-        <td>${q.numero}</td>
-        <td>${formatDateIT(q.data)}</td>
-        <td>${client ? client.nome + " " + client.cognome : "-"}</td>
-        <td>${q.oggetto}</td>
+        <td>${q.numero || '-'}</td>
+        <td>${q.data ? formatDateIT(q.data) : '-'}</td>
+        <td>${client ? (client.nome || '') + ' ' + (client.cognome || '') : '-'}</td>
+        <td>${q.oggetto || ''}</td>
         <td class="right">${currency(total)}</td>
-        <td><span class="status-badge ${q.stato.toLowerCase().replace(' ', '-')}">${q.stato}</span></td>
+        <td><span class="status-badge ${stato.toLowerCase().replace(/\s+/g, '-')}">${stato}</span></td>
         <td>
           <div class="action-buttons">
             <div class="action-row">
@@ -2880,7 +2912,7 @@ function emailQuote(id) {
   
   // Calcola il totale con IVA
   const subtotal = quote.voci.reduce((sum, v) => sum + v.totale, 0);
-  const total = subtotal * 1.22;
+  const total = subtotal * 1.10;
   
   // Crea il corpo dell'email
   const subject = `Preventivo ${quote.numero} - ${quote.oggetto}`;
@@ -2919,8 +2951,56 @@ HB Impianti`;
 function exportSingleQuote(id) {
   const quote = quotes.find(q => q.id === id);
   if (!quote) return;
-  
-  exportQuoteToPDF(quote);
+  // Apri il template preventivo popolato (simile al flusso fattura)
+  exportPreventivoPDF(id);
+}
+
+function exportPreventivoPDF(id) {
+  const quote = quotes.find(q => q.id === id);
+  if (!quote) return;
+  const client = clients.find(c => c.id === quote.clienteId);
+  if (!client) { alert('Cliente non trovato'); return; }
+
+  const items = (quote.voci || []).map(v => {
+    const qty = v.quantita || v.qty || 1;
+    let unit = v.prezzo || v.unit || 0;
+    if ((!unit || unit === 0) && v.totale && qty) unit = Number(v.totale) / Number(qty);
+    return {
+      desc: v.descrizione || v.desc || '',
+      qty: qty,
+      unit: unit || 0
+    };
+  });
+
+  const subtotal = quote.subtotale ?? (items.reduce((s,i)=>s + (i.qty*(i.unit||0)),0));
+  const taxPercent = quote.ivaPercent ?? 10;
+
+  const data = {
+    seller: {
+      name: getStorage('companyName','HB Termoimpianti'),
+      address: getStorage('companyAddress','Via Trapione 16, Arco 38062 TN'),
+      vat: getStorage('companyVat','02625040221')
+    },
+    client: {
+      name: (client.nome || '') + ' ' + (client.cognome || ''),
+      address: client.indirizzo || client.address || '',
+      vat: client.piva || client.cf || ''
+    },
+    quote: {
+      number: quote.numero || quote.id,
+      date: quote.data || new Date().toISOString().slice(0,10),
+      validita: quote.validita || '',
+      tempi: quote.tempi || ''
+    },
+    items: items,
+    tax: taxPercent,
+    notes: quote.note || ''
+  };
+
+  try { window.selectedPreventivoData = data; } catch(e){}
+  try { localStorage.setItem('preventivoData', JSON.stringify(data)); } catch(e){}
+
+  window.open('preventivo_template.html', '_blank');
 }
 
 function exportQuotesToPDF() {
@@ -2978,7 +3058,9 @@ function exportToPDF(title, tableId) {
       doc.text("ELENCO INTERVENTI:", 20, yPos);
       yPos += 10;
       jobs.slice(0, 30).forEach((job, index) => {
-        doc.text(`${job.id} - Cliente: ${job.cliente} - Data: ${formatDateIT(job.data)}`, 20, yPos);
+        const jobClient = clients.find(c => c.id === job.clienteId);
+        const clientLabel = jobClient ? `${jobClient.nome || ''} ${jobClient.cognome || ''}`.trim() : '-';
+        doc.text(`${job.id} - Cliente: ${clientLabel} - Data: ${formatDateIT(job.data)}`, 20, yPos);
         yPos += 8;
         if (yPos > 280) { doc.addPage(); yPos = 20; }
       });
@@ -3349,7 +3431,7 @@ function addQuoteItemsTable(doc, quote, startY) {
 
 function addQuoteTotals(doc, quote, startY) {
   const subtotal = quote.voci.reduce((sum, v) => sum + v.totale, 0);
-  const iva = subtotal * 0.22;
+  const iva = subtotal * 0.10;
   const total = subtotal + iva;
   
   let y = startY;
@@ -3367,7 +3449,7 @@ function addQuoteTotals(doc, quote, startY) {
   doc.text("Subtotale:", 360, y + 20);
   doc.text(currency(subtotal), 480, y + 20);
   
-  doc.text("IVA 22%:", 360, y + 40);
+  doc.text("IVA 10%:", 360, y + 40);
   doc.text(currency(iva), 480, y + 40);
   
   // Totale in evidenza
@@ -4359,7 +4441,7 @@ function viewClientHistory(clientId) {
             <div class="history-item">
               <div class="history-item-header">
                 <span class="history-date">${formatDateIT(quote.data)}</span>
-                <span class="history-value">${currency(quote.voci.reduce((sum, v) => sum + v.totale, 0) * 1.22)}</span>
+                <span class="history-value">${currency(quote.voci.reduce((sum, v) => sum + v.totale, 0) * 1.10)}</span>
                 <span class="history-status status-${quote.stato.toLowerCase().replace(' ', '-')}">${quote.stato}</span>
               </div>
               <div class="history-item-details">
@@ -4425,14 +4507,27 @@ function viewClientHistory(clientId) {
 
 // ---------- Render Invoices ----------
 function renderInvoices() {
+  // Assicura che le liste siano aggiornate dal localStorage
+  clients = getStorage('clients', []);
+  invoices = getStorage('invoices', []);
+  // fallback: some installs used italian keys
+  if ((!invoices || invoices.length === 0) && localStorage.getItem('fatture')) {
+    try {
+      const altInv = JSON.parse(localStorage.getItem('fatture')) || [];
+      if (altInv.length) {
+        invoices = altInv;
+        setStorage('invoices', invoices);
+        console.info('Caricate fatture da chiave alternativa "fatture"');
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   content.innerHTML = `
     <div class="card">
       <div class="invoice-header">
         <h2><i class="fas fa-file-invoice"></i> Gestione Fatture</h2>
         <div class="button-group">
-          <button id="exportInvoices" class="pdf">
-            <i class="fas fa-file-pdf"></i> Esporta PDF
-          </button>
+          <!-- Bulk export disabled -->
         </div>
       </div>
       
@@ -4459,19 +4554,22 @@ function renderInvoices() {
   updateInvoicesTable();
   
   // Event listeners
-  document.getElementById('exportInvoices').onclick = () => exportToPDF("Fatture", "invoicesTable");
+  // Bulk export button removed — no global export for invoices
 }
 
 function updateInvoicesTable() {
   const tbody = document.querySelector("#invoicesTable tbody");
   tbody.innerHTML = invoices.map(inv => {
     const client = clients.find(c => c.id === inv.clienteId);
+    const invNumber = inv.numero || '-';
+    const invDate = inv.data ? formatDateIT(inv.data) : '-';
+    const invTotal = Number(inv.totale) || 0;
     return `
       <tr>
-        <td>${inv.numero}</td>
-        <td>${client ? client.nome + " " + client.cognome : "-"}</td>
-        <td>${formatDateIT(inv.data)}</td>
-        <td class="right">${currency(inv.totale)}</td>
+        <td>${invNumber}</td>
+        <td>${client ? ((client.nome || '') + ' ' + (client.cognome || '')).trim() : '-'}</td>
+        <td>${invDate}</td>
+        <td class="right">${currency(invTotal)}</td>
         <td><input type="checkbox" ${inv.pagata ? "checked" : ""} onchange="toggleInvoicePaid(${inv.id})"></td>
         <td>
           <div class="action-buttons">
@@ -4501,8 +4599,8 @@ function createInvoiceFromApprovedQuote(quote) {
     oggetto: quote.oggetto,
     voci: [...quote.voci],
     subtotale: quote.voci.reduce((sum, v) => sum + v.totale, 0),
-    iva: quote.voci.reduce((sum, v) => sum + v.totale, 0) * 0.22,
-    totale: quote.voci.reduce((sum, v) => sum + v.totale, 0) * 1.22,
+    iva: quote.voci.reduce((sum, v) => sum + v.totale, 0) * 0.10,
+    totale: quote.voci.reduce((sum, v) => sum + v.totale, 0) * 1.10,
     pagata: false,
     quoteId: quote.id,
     createdAt: new Date().toISOString()
@@ -4550,193 +4648,142 @@ function printInvoice(id) {
     return;
   }
   
-  // Crea una finestra di stampa con il contenuto della fattura
+  // Crea una finestra di stampa con il contenuto della fattura senza usare document.write
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Fattura ${invoice.numero}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px; }
-        .company-info { text-align: right; margin-bottom: 30px; }
-        .client-info { margin-bottom: 30px; }
-        .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        .items-table th { background-color: #f8f9fa; font-weight: bold; }
-        .totals { text-align: right; margin-top: 20px; }
-        .total-row { display: flex; justify-content: space-between; margin: 5px 0; }
-        .final-total { font-weight: bold; font-size: 1.2em; border-top: 2px solid #007bff; padding-top: 10px; }
-        @media print { body { margin: 0; } }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>HB TERMOIMPIANTI</h1>
-        <p>Gestione professionale degli impianti termici</p>
-      </div>
-      
-      <div class="company-info">
-        <strong>HB Termoimpianti</strong><br>
-        Via Esempio 123<br>
-        00000 Roma (RM)<br>
-        P.IVA: 12345678901<br>
-        Tel: +39 06 1234567<br>
-        Email: info@hbtermoimpianti.it
-      </div>
-      
-      <div class="client-info">
-        <strong>Fattura a:</strong><br>
-        ${client.nome} ${client.cognome}<br>
-        ${client.indirizzo || ''}<br>
-        ${client.telefono ? 'Tel: ' + client.telefono : ''}<br>
-        ${client.email ? 'Email: ' + client.email : ''}
-      </div>
-      
-      <div class="invoice-details">
-        <div>
-          <strong>Fattura N°:</strong> ${invoice.numero}<br>
-          <strong>Data:</strong> ${formatDateIT(invoice.data)}<br>
-          <strong>Oggetto:</strong> ${invoice.oggetto}
-        </div>
-        <div>
-          <strong>Stato:</strong> ${invoice.pagata ? 'PAGATA' : 'NON PAGATA'}<br>
-          ${invoice.pagata && invoice.dataPagamento ? '<strong>Data Pagamento:</strong> ' + formatDateIT(invoice.dataPagamento) : ''}
-        </div>
-      </div>
-      
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>Descrizione</th>
-            <th>Quantità</th>
-            <th>Prezzo Unit.</th>
-            <th>Totale</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${invoice.voci.map(voce => `
-            <tr>
-              <td>${voce.descrizione}</td>
-              <td>${voce.quantita}</td>
-              <td>${currency(voce.prezzo)}</td>
-              <td>${currency(voce.totale)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <div class="totals">
-        <div class="total-row">
-          <span>Subtotale:</span>
-          <span>${currency(invoice.subtotale)}</span>
-        </div>
-        <div class="total-row">
-          <span>IVA (22%):</span>
-          <span>${currency(invoice.iva)}</span>
-        </div>
-        <div class="total-row final-total">
-          <span>TOTALE:</span>
-          <span>${currency(invoice.totale)}</span>
-        </div>
-      </div>
-      
-      <div style="margin-top: 50px; font-size: 0.9em; color: #666;">
-        <p>Fattura generata automaticamente da HB Termoimpianti - ${new Date().toLocaleDateString('it-IT')}</p>
-      </div>
-    </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
+  if (!printWindow) return;
+  // inizializza documento senza usare document.write
+  try { printWindow.document.title = `Fattura ${invoice.numero}`; } catch (e) {}
+
+  // aggiungi stile
+  const style = printWindow.document.createElement('style');
+  style.textContent = `
+    body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px; }
+    .company-info { text-align: right; margin-bottom: 30px; }
+    .client-info { margin-bottom: 30px; }
+    .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    .items-table th { background-color: #f8f9fa; font-weight: bold; }
+    .totals { text-align: right; margin-top: 20px; }
+    .total-row { display: flex; justify-content: space-between; margin: 5px 0; }
+    .final-total { font-weight: bold; font-size: 1.2em; border-top: 2px solid #007bff; padding-top: 10px; }
+    @media print { body { margin: 0; } }
+  `;
+  printWindow.document.head.appendChild(style);
+
+  // costruisci contenuto usando DOM
+  const body = printWindow.document.body;
+
+  const headerDiv = printWindow.document.createElement('div');
+  headerDiv.className = 'header';
+  headerDiv.innerHTML = '<h1>HB TERMOIMPIANTI</h1><p>Gestione professionale degli impianti termici</p>';
+  body.appendChild(headerDiv);
+
+  const companyInfo = printWindow.document.createElement('div');
+  companyInfo.className = 'company-info';
+  companyInfo.innerHTML = `<strong>HB Termoimpianti</strong><br>Via Esempio 123<br>00000 Roma (RM)<br>P.IVA: 12345678901<br>Tel: +39 06 1234567<br>Email: info@hbtermoimpianti.it`;
+  body.appendChild(companyInfo);
+
+  const clientInfo = printWindow.document.createElement('div');
+  clientInfo.className = 'client-info';
+  clientInfo.innerHTML = `<strong>Fattura a:</strong><br>${client.nome} ${client.cognome}<br>${client.indirizzo || ''}<br>${client.telefono ? 'Tel: ' + client.telefono : ''}<br>${client.email ? 'Email: ' + client.email : ''}`;
+  body.appendChild(clientInfo);
+
+  const details = printWindow.document.createElement('div');
+  details.className = 'invoice-details';
+  details.innerHTML = `<div><strong>Fattura N°:</strong> ${invoice.numero}<br><strong>Data:</strong> ${formatDateIT(invoice.data)}<br><strong>Oggetto:</strong> ${invoice.oggetto}</div><div><strong>Stato:</strong> ${invoice.pagata ? 'PAGATA' : 'NON PAGATA'}<br>${invoice.pagata && invoice.dataPagamento ? '<strong>Data Pagamento:</strong> ' + formatDateIT(invoice.dataPagamento) : ''}</div>`;
+  body.appendChild(details);
+
+  const table = printWindow.document.createElement('table');
+  table.className = 'items-table';
+  table.innerHTML = `<thead><tr><th>Descrizione</th><th>Quantità</th><th>Prezzo Unit.</th><th>Totale</th></tr></thead><tbody>${invoice.voci.map(voce => `<tr><td>${voce.descrizione}</td><td>${voce.quantita}</td><td>${currency(voce.prezzo)}</td><td>${currency(voce.totale)}</td></tr>`).join('')}</tbody>`;
+  body.appendChild(table);
+
+  const totals = printWindow.document.createElement('div');
+  totals.className = 'totals';
+  totals.innerHTML = `<div class="total-row"><span>Subtotale:</span><span>${currency(invoice.subtotale)}</span></div><div class="total-row"><span>IVA (10%):</span><span>${currency(invoice.iva)}</span></div><div class="total-row final-total"><span>TOTALE:</span><span>${currency(invoice.totale)}</span></div>`;
+  body.appendChild(totals);
+
+  const footerNote = printWindow.document.createElement('div');
+  footerNote.style.marginTop = '50px';
+  footerNote.style.fontSize = '0.9em';
+  footerNote.style.color = '#666';
+  footerNote.innerHTML = `<p>Fattura generata automaticamente da HB Termoimpianti - ${new Date().toLocaleDateString('it-IT')}</p>`;
+  body.appendChild(footerNote);
+
+  // avvia stampa
+  printWindow.focus();
   printWindow.print();
 }
 
 function exportInvoicePDF(id) {
   const invoice = invoices.find(inv => inv.id === id);
   if (!invoice) return;
-  
   const client = clients.find(c => c.id === invoice.clienteId);
   if (!client) {
     alert('Cliente non trovato');
     return;
   }
-  
-  // Utilizza jsPDF per creare il PDF
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  
-  // Header
-  doc.setFontSize(20);
-  doc.setTextColor(0, 123, 255);
-  doc.text('HB TERMOIMPIANTI', 105, 20, null, null, 'center');
-  
-  doc.setFontSize(12);
-  doc.setTextColor(100);
-  doc.text('Gestione professionale degli impianti termici', 105, 30, null, null, 'center');
-  
-  // Informazioni azienda
-  doc.setTextColor(0);
-  doc.setFontSize(10);
-  doc.text('HB Termoimpianti', 150, 50);
-  doc.text('Via Esempio 123', 150, 55);
-  doc.text('00000 Roma (RM)', 150, 60);
-  doc.text('P.IVA: 12345678901', 150, 65);
-  
-  // Informazioni cliente
-  doc.setFontSize(12);
-  doc.text('Fattura a:', 20, 50);
-  doc.setFontSize(10);
-  doc.text(`${client.nome} ${client.cognome}`, 20, 60);
-  if (client.indirizzo) doc.text(client.indirizzo, 20, 65);
-  if (client.telefono) doc.text(`Tel: ${client.telefono}`, 20, 70);
-  if (client.email) doc.text(`Email: ${client.email}`, 20, 75);
-  
-  // Dettagli fattura
-  doc.setFontSize(12);
-  doc.text(`Fattura N°: ${invoice.numero}`, 20, 90);
-  doc.text(`Data: ${formatDateIT(invoice.data)}`, 20, 95);
-  doc.text(`Oggetto: ${invoice.oggetto}`, 20, 100);
-  doc.text(`Stato: ${invoice.pagata ? 'PAGATA' : 'NON PAGATA'}`, 120, 90);
-  
-  // Tabella voci
-  let yPos = 120;
-  doc.setFontSize(10);
-  doc.text('Descrizione', 20, yPos);
-  doc.text('Qta', 120, yPos);
-  doc.text('Prezzo', 140, yPos);
-  doc.text('Totale', 170, yPos);
-  
-  yPos += 5;
-  doc.line(20, yPos, 190, yPos);
-  yPos += 10;
-  
-  invoice.voci.forEach(voce => {
-    doc.text(voce.descrizione.substring(0, 40), 20, yPos);
-    doc.text(voce.quantita.toString(), 120, yPos);
-    doc.text(currency(voce.prezzo), 140, yPos);
-    doc.text(currency(voce.totale), 170, yPos);
-    yPos += 10;
-  });
-  
-  // Totali
-  yPos += 10;
-  doc.line(120, yPos, 190, yPos);
-  yPos += 10;
-  doc.text('Subtotale:', 120, yPos);
-  doc.text(currency(invoice.subtotale), 170, yPos);
-  yPos += 10;
-  doc.text('IVA (22%):', 120, yPos);
-  doc.text(currency(invoice.iva), 170, yPos);
-  yPos += 10;
-  doc.setFontSize(12);
-  doc.text('TOTALE:', 120, yPos);
-  doc.text(currency(invoice.totale), 170, yPos);
-  
-  // Salva il PDF
-  doc.save(`Fattura_${invoice.numero.replace('/', '_')}.pdf`);
+  // Mappa i dati nel formato usato dal template `fattura_template.html`
+  const items = (invoice.voci || []).map(v => ({
+    article: v.codice || v.articolo || '',
+    desc: v.descrizione || v.desc || '',
+    unitName: v.unita || v.um || v.unitName || '',
+    qty: v.quantita || v.qty || 1,
+    unit: v.prezzo || v.unit || v.totale || 0,
+    vat: (typeof v.iva === 'number') ? v.iva : (typeof v.vat === 'number' ? v.vat : undefined)
+  }));
+
+  const subtotal = invoice.subtotale ?? (items.reduce((s,i)=>s + (i.qty*(i.unit||0)),0));
+  const ivaAmount = invoice.iva ?? (invoice.totale ? invoice.totale - subtotal : 0);
+  const taxPercent = subtotal ? Math.round((ivaAmount / subtotal) * 100) : 10;
+
+  const data = {
+    seller: {
+      name: getStorage('companyName','HB Termoimpianti'),
+      address: getStorage('companyAddress','Via Trapione 16, Arco 38062 TN'),
+      vat: getStorage('companyVat','02625040221')
+    },
+    client: (() => {
+      // determina la sede: preferisci il luogo dell'intervento collegato alla fattura (job.luogo)
+      let sedeVal = client.sede || client.sede_operativa || '';
+      try {
+        if (invoice.jobId) {
+          const linkedJob = jobs.find(j => j.id === invoice.jobId);
+          if (linkedJob && linkedJob.luogo) sedeVal = linkedJob.luogo;
+        }
+      } catch (e) { /* ignore */ }
+      return {
+        name: ((client.nome || '') + ' ' + (client.cognome || '')).trim(),
+        address: client.indirizzo || client.address || client.via || '',
+        sede: sedeVal,
+        postal: client.cap || client.postal || client.zip || '',
+        city: client.citta || client.city || client.town || '',
+        province: client.prov || client.province || client.provincia || '',
+        cf: client.cf || client.codicefiscale || '',
+        vat: client.piva || client.vat || '',
+        phone: client.telefono || client.phone || client.mobile || '',
+        email: client.email || client.mail || ''
+      };
+    })(),
+    invoice: {
+      number: invoice.numero || invoice.id,
+      date: invoice.data || new Date().toISOString().slice(0,10),
+      terms: invoice.termini || '',
+      due: invoice.scadenza || ''
+    },
+    items: items,
+    tax: taxPercent,
+    notes: invoice.note || ''
+  };
+
+  // Espone i dati per la pagina template e li salva nel localStorage
+  try { window.selectedInvoiceData = data; } catch(e){}
+  try { localStorage.setItem('invoiceData', JSON.stringify(data)); } catch(e){}
+
+  // Apri il template in una nuova finestra per poter esportare con generateInvoicePDF()
+  window.open('fattura_template.html','_blank');
 }
 
 function emailInvoice(id) {
@@ -4772,8 +4819,74 @@ Email: info@hbtermoimpianti.it`;
   const mailtoLink = `mailto:${client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   
   // Apre il client email predefinito
+  // Prova a generare l'HTML della fattura e aprire una finestra di anteprima
+  if (window.generaFatturaHTMLString) {
+    const html = window.generaFatturaHTMLString(invoice, client);
+    const w = window.open('', '_blank', 'noopener');
+    if (w) {
+      const sanitizedHtml = html;
+      try { w.document.title = 'Anteprima Fattura'; } catch (e) {}
+
+      // inserisci l'HTML della fattura nel body
+      try {
+        w.document.body.innerHTML = sanitizedHtml;
+      } catch (e) {
+        // fallback: append as text
+        const pre = w.document.createElement('pre');
+        pre.textContent = sanitizedHtml;
+        w.document.body.appendChild(pre);
+      }
+
+      // crea pannello di controllo fisso
+      const panel = w.document.createElement('div');
+      panel.style.position = 'fixed';
+      panel.style.bottom = '12px';
+      panel.style.left = '12px';
+      panel.style.background = '#fff';
+      panel.style.padding = '8px';
+      panel.style.border = '1px solid #ccc';
+      panel.style.zIndex = '9999';
+
+      const copyBtn = w.document.createElement('button');
+      copyBtn.id = 'copyHtml';
+      copyBtn.textContent = 'Copia HTML negli appunti';
+      panel.appendChild(copyBtn);
+
+      const openMailBtn = w.document.createElement('button');
+      openMailBtn.id = 'openMail';
+      openMailBtn.style.marginLeft = '8px';
+      openMailBtn.textContent = 'Apri client email';
+      panel.appendChild(openMailBtn);
+
+      const msgSpan = w.document.createElement('span');
+      msgSpan.id = 'msg';
+      msgSpan.style.marginLeft = '8px';
+      msgSpan.style.color = 'green';
+      panel.appendChild(msgSpan);
+
+      w.document.body.appendChild(panel);
+
+      // add events
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(sanitizedHtml);
+          msgSpan.textContent = 'Copiato!';
+        } catch (err) {
+          msgSpan.textContent = 'Errore copia';
+        }
+      });
+      openMailBtn.addEventListener('click', () => {
+        // mailto opens client; user must incollare l'HTML nel body (client-dependent)
+        window.location.href = mailtoLink;
+      });
+
+      showNotification ? showNotification(`Anteprima HTML aperta. Copia/incolla nel client email.`, 'info') : console.log('Anteprima HTML aperta');
+      return;
+    }
+  }
+
+  // fallback: apri mailto semplice
   window.location.href = mailtoLink;
-  
   showNotification(`Email preparata per ${client.email}`, 'success');
 }
 
