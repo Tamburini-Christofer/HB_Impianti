@@ -91,6 +91,10 @@ function euro(val) {
 // Genera una stringa HTML della fattura (stile adattato dal template fornito)
 function generaFatturaHTMLString(invoice, client) {
   const safe = v => (v === undefined || v === null) ? '' : v;
+  const aliquotaVal = (invoice && invoice.aliquota != null) ? Number(invoice.aliquota) : 10;
+  const imponibileVal = Number(invoice.imponibile) || (Array.isArray(invoice.voci) ? invoice.voci.reduce((s, v) => s + (Number(v.totale) || (Number(v.prezzo) || 0) * (Number(v.quantita) || 0)), 0) : 0);
+  const ivaVal = (invoice && invoice.iva != null) ? Number(invoice.iva) : +(imponibileVal * aliquotaVal / 100);
+  const totaleVal = (invoice && invoice.totale != null) ? Number(invoice.totale) : +(imponibileVal + ivaVal);
   const rows = (Array.isArray(invoice.voci) ? invoice.voci : []).map(v => `
     <tr>
       <td>${safe(v.quantita)}</td>
@@ -117,7 +121,7 @@ function generaFatturaHTMLString(invoice, client) {
             <tr><td>Numero</td><td>${safe(invoice.numero)}</td></tr>
             <tr><td>Data</td><td>${safe(invoice.data)}</td></tr>
             <tr><td>Scadenza</td><td>${safe(invoice.scadenza)}</td></tr>
-            <tr class="totale"><td><strong>Totale</strong></td><td><strong>${safe(euro(invoice.totale))}</strong></td></tr>
+            <tr class="totale"><td><strong>Totale</strong></td><td><strong>${euro(totaleVal)}</strong></td></tr>
           </table>
         </div>
       </header>
@@ -138,9 +142,9 @@ function generaFatturaHTMLString(invoice, client) {
 
       <div class="riepilogo">
         <table>
-          <tr><td>Imponibile</td><td>${safe(euro(invoice.imponibile))}</td></tr>
-          <tr><td>IVA ${safe(invoice.aliquota) || '10'}%</td><td>${safe(euro(invoice.iva))}</td></tr>
-          <tr class="totale"><td>Totale</td><td>${safe(euro(invoice.totale))}</td></tr>
+          <tr><td>Imponibile</td><td>${euro(imponibileVal)}</td></tr>
+          <tr><td>IVA ${aliquotaVal}%</td><td>${euro(ivaVal)}</td></tr>
+          <tr class="totale"><td>Totale</td><td>${euro(totaleVal)}</td></tr>
         </table>
       </div>
 

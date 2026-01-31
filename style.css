@@ -1198,7 +1198,8 @@ body {
   max-width: 800px;
   max-height: 90vh;
   width: 90%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: var(--shadow);
 }
 
@@ -1427,6 +1428,8 @@ body {
 
 .appointment-details-content {
   padding: 20px 24px;
+  max-height: calc(80vh - 160px);
+  overflow-y: auto;
 }
 
 .detail-row {
@@ -1489,20 +1492,27 @@ body {
   padding: 20px 24px;
   border-top: 1px solid var(--border);
   background: var(--surface-light);
+  justify-content: flex-end;
 }
 
 .appointment-actions-modal button {
-  flex: 1;
   padding: 10px 16px;
   border: none;
   border-radius: var(--radius-small);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.appointment-actions-modal button.success,
+.appointment-actions-modal button.delete {
+  padding: 12px 20px;
+  font-size: 1rem;
+  min-width: 140px;
 }
 
 /* -------------------- LISTA APPUNTAMENTI GIORNO -------------------- */

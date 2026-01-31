@@ -1639,21 +1639,27 @@ function renderMaterials() {
 }
 
 function updateMaterialsTable(tbody, materialsToShow = materials) {
-  tbody.innerHTML = materialsToShow.map(m => `
+  tbody.innerHTML = materialsToShow.map(m => {
+    const qta = Number(m.qta) || 0;
+    const prezzo = Number(m.prezzo) || 0;
+    const iva = Number(m.iva) || 0;
+    const costoConIva = qta * prezzo * (1 + iva / 100);
+    return `
     <tr>
       <td>${m.id}</td>
       <td>${m.descrizione}</td>
-      <td class="right mobile-hide">${m.qta}</td>
-      <td class="right mobile-hide">${currency(m.costo)}</td>
-      <td class="right">${currency(m.prezzo)}</td>
-      <td class="right mobile-hide">${m.iva}</td>
+      <td class="right mobile-hide">${qta}</td>
+      <td class="right mobile-hide">${currency(costoConIva)}</td>
+      <td class="right">${currency(prezzo)}</td>
+      <td class="right mobile-hide">${iva}</td>
       <td>
         <div class="action-buttons">
           <button onclick="editMaterial(${m.id})" class="edit"><i class="fa-solid fa-edit"></i></button>
           <button onclick="deleteMaterial(${m.id})" class="delete"><i class="fa-solid fa-trash"></i></button>
         </div>
       </td>
-    </tr>`).join("");
+    </tr>`
+  }).join("");
 }
 function editMaterial(id) {
   const material = materials.find(m => m.id === id);
@@ -2835,9 +2841,7 @@ function updateQuotesTable() {
               <button onclick="changeQuoteStatus(${q.id})" class="success" style="width: 36px; height: 36px;" title="Cambia Stato">
                 <i class="fas fa-check-circle"></i>
               </button>
-              <button onclick="emailQuote(${q.id})" class="primary" style="width: 36px; height: 36px;" title="Invia Email">
-                <i class="fas fa-envelope"></i>
-              </button>
+              <!-- email button removed -->
             </div>
             <div class="action-row">
               <button onclick="exportSingleQuote(${q.id})" class="pdf" style="width: 36px; height: 36px;" title="Esporta PDF">
@@ -3850,7 +3854,7 @@ function renderCalendar() {
         <div class="calendar-add-section">
           <h3><i class="fas fa-plus"></i> Nuovo Appuntamento</h3>
           <div class="row">
-            <div><label class="required">Data e Ora</label><input id="apt_datetime" type="datetime-local" required></div>
+            <div style="display:flex;gap:8px;align-items:center"><div><label class="required">Data</label><input id="apt_date" type="date" required></div><div><label class="required">Ora</label><input id="apt_time" type="time" required></div></div>
             <div>
               <label class="required">Cliente</label>
               <select id="apt_cliente" required>
@@ -3900,11 +3904,14 @@ function renderCalendar() {
       </div>
     </div>`;
   
-  // Imposta datetime di default (oggi + 1 ora)
+  // Imposta date e time di default (oggi + 1 ora)
   const defaultDate = new Date();
   defaultDate.setHours(defaultDate.getHours() + 1);
   defaultDate.setMinutes(0);
-  document.getElementById('apt_datetime').value = defaultDate.toISOString().slice(0, 16);
+  const dateInput = document.getElementById('apt_date');
+  const timeInput = document.getElementById('apt_time');
+  if (dateInput) dateInput.value = defaultDate.toISOString().slice(0, 10);
+  if (timeInput) timeInput.value = defaultDate.toISOString().slice(11, 16);
   
   updateCalendarView(currentCalendarMonth, currentCalendarYear);
   updateUpcomingAppointments();
@@ -3940,16 +3947,17 @@ function renderCalendar() {
 }
 
 function addAppointment() {
-  const datetime = document.getElementById('apt_datetime').value;
+  const date = (document.getElementById('apt_date') || {}).value;
+  const time = (document.getElementById('apt_time') || {}).value;
   const clienteId = document.getElementById('apt_cliente').value;
   const tipo = document.getElementById('apt_tipo').value;
   const durata = Number(document.getElementById('apt_durata').value);
   const note = document.getElementById('apt_note').value.trim();
-  
+
   // Validazione campi obbligatori
-  if (!datetime) {
-    alert('⚠️ Il campo Data e Ora è obbligatorio!');
-    document.getElementById('apt_datetime').focus();
+  if (!date || !time) {
+    alert('⚠️ I campi Data e Ora sono obbligatori!');
+    if (!date) document.getElementById('apt_date').focus(); else document.getElementById('apt_time').focus();
     return;
   }
   if (!clienteId) {
@@ -3958,9 +3966,12 @@ function addAppointment() {
     return;
   }
   
+  // Combina data e ora in ISO
+  const datetimeISO = new Date(date + 'T' + time).toISOString();
+
   appointments.push({
     id: uid(appointments),
-    datetime: datetime,
+    datetime: datetimeISO,
     clienteId: Number(clienteId),
     tipo: tipo,
     durata: durata,
@@ -3972,7 +3983,10 @@ function addAppointment() {
   setStorage('appointments', appointments);
   
   // Reset form
-  document.getElementById('apt_datetime').value = '';
+  const dateEl = document.getElementById('apt_date');
+  const timeEl = document.getElementById('apt_time');
+  if (dateEl) dateEl.value = '';
+  if (timeEl) timeEl.value = '';
   document.getElementById('apt_cliente').value = '';
   document.getElementById('apt_tipo').value = 'Manutenzione';
   document.getElementById('apt_durata').value = '2';
@@ -4276,9 +4290,6 @@ function showAppointmentDetails(id) {
         <button onclick="completeAppointmentFromModal(${appointment.id})" class="success">
           <i class="fas fa-check"></i> Completa
         </button>
-        <button onclick="editAppointmentFromModal(${appointment.id})" class="primary">
-          <i class="fas fa-edit"></i> Modifica
-        </button>
         <button onclick="deleteAppointmentFromModal(${appointment.id})" class="delete">
           <i class="fas fa-trash"></i> Elimina
         </button>
@@ -4573,11 +4584,9 @@ function updateInvoicesTable() {
         <td><input type="checkbox" ${inv.pagata ? "checked" : ""} onchange="toggleInvoicePaid(${inv.id})"></td>
         <td>
           <div class="action-buttons">
-            <button onclick="printInvoice(${inv.id})" class="primary" title="Stampa"><i class="fas fa-print"></i></button>
-            <button onclick="exportInvoicePDF(${inv.id})" class="pdf" title="Esporta PDF"><i class="fas fa-file-pdf"></i></button>
-            <button onclick="emailInvoice(${inv.id})" class="secondary" title="Invia Email"><i class="fas fa-envelope"></i></button>
-            <button onclick="deleteInvoice(${inv.id})" class="delete" title="Elimina"><i class="fas fa-trash"></i></button>
-          </div>
+              <button onclick="exportInvoicePDF(${inv.id})" class="pdf" title="Esporta PDF"><i class="fas fa-file-pdf"></i></button>
+              <button onclick="deleteInvoice(${inv.id})" class="delete" title="Elimina"><i class="fas fa-trash"></i></button>
+            </div>
         </td>
       </tr>`;
   }).join("");
@@ -4638,84 +4647,7 @@ function deleteInvoice(id) {
   }
 }
 
-function printInvoice(id) {
-  const invoice = invoices.find(inv => inv.id === id);
-  if (!invoice) return;
-  
-  const client = clients.find(c => c.id === invoice.clienteId);
-  if (!client) {
-    alert('Cliente non trovato');
-    return;
-  }
-  
-  // Crea una finestra di stampa con il contenuto della fattura senza usare document.write
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-  // inizializza documento senza usare document.write
-  try { printWindow.document.title = `Fattura ${invoice.numero}`; } catch (e) {}
-
-  // aggiungi stile
-  const style = printWindow.document.createElement('style');
-  style.textContent = `
-    body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px; }
-    .company-info { text-align: right; margin-bottom: 30px; }
-    .client-info { margin-bottom: 30px; }
-    .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-    .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    .items-table th { background-color: #f8f9fa; font-weight: bold; }
-    .totals { text-align: right; margin-top: 20px; }
-    .total-row { display: flex; justify-content: space-between; margin: 5px 0; }
-    .final-total { font-weight: bold; font-size: 1.2em; border-top: 2px solid #007bff; padding-top: 10px; }
-    @media print { body { margin: 0; } }
-  `;
-  printWindow.document.head.appendChild(style);
-
-  // costruisci contenuto usando DOM
-  const body = printWindow.document.body;
-
-  const headerDiv = printWindow.document.createElement('div');
-  headerDiv.className = 'header';
-  headerDiv.innerHTML = '<h1>HB TERMOIMPIANTI</h1><p>Gestione professionale degli impianti termici</p>';
-  body.appendChild(headerDiv);
-
-  const companyInfo = printWindow.document.createElement('div');
-  companyInfo.className = 'company-info';
-  companyInfo.innerHTML = `<strong>HB Termoimpianti</strong><br>Via Esempio 123<br>00000 Roma (RM)<br>P.IVA: 12345678901<br>Tel: +39 06 1234567<br>Email: info@hbtermoimpianti.it`;
-  body.appendChild(companyInfo);
-
-  const clientInfo = printWindow.document.createElement('div');
-  clientInfo.className = 'client-info';
-  clientInfo.innerHTML = `<strong>Fattura a:</strong><br>${client.nome} ${client.cognome}<br>${client.indirizzo || ''}<br>${client.telefono ? 'Tel: ' + client.telefono : ''}<br>${client.email ? 'Email: ' + client.email : ''}`;
-  body.appendChild(clientInfo);
-
-  const details = printWindow.document.createElement('div');
-  details.className = 'invoice-details';
-  details.innerHTML = `<div><strong>Fattura N°:</strong> ${invoice.numero}<br><strong>Data:</strong> ${formatDateIT(invoice.data)}<br><strong>Oggetto:</strong> ${invoice.oggetto}</div><div><strong>Stato:</strong> ${invoice.pagata ? 'PAGATA' : 'NON PAGATA'}<br>${invoice.pagata && invoice.dataPagamento ? '<strong>Data Pagamento:</strong> ' + formatDateIT(invoice.dataPagamento) : ''}</div>`;
-  body.appendChild(details);
-
-  const table = printWindow.document.createElement('table');
-  table.className = 'items-table';
-  table.innerHTML = `<thead><tr><th>Descrizione</th><th>Quantità</th><th>Prezzo Unit.</th><th>Totale</th></tr></thead><tbody>${invoice.voci.map(voce => `<tr><td>${voce.descrizione}</td><td>${voce.quantita}</td><td>${currency(voce.prezzo)}</td><td>${currency(voce.totale)}</td></tr>`).join('')}</tbody>`;
-  body.appendChild(table);
-
-  const totals = printWindow.document.createElement('div');
-  totals.className = 'totals';
-  totals.innerHTML = `<div class="total-row"><span>Subtotale:</span><span>${currency(invoice.subtotale)}</span></div><div class="total-row"><span>IVA (10%):</span><span>${currency(invoice.iva)}</span></div><div class="total-row final-total"><span>TOTALE:</span><span>${currency(invoice.totale)}</span></div>`;
-  body.appendChild(totals);
-
-  const footerNote = printWindow.document.createElement('div');
-  footerNote.style.marginTop = '50px';
-  footerNote.style.fontSize = '0.9em';
-  footerNote.style.color = '#666';
-  footerNote.innerHTML = `<p>Fattura generata automaticamente da HB Termoimpianti - ${new Date().toLocaleDateString('it-IT')}</p>`;
-  body.appendChild(footerNote);
-
-  // avvia stampa
-  printWindow.focus();
-  printWindow.print();
-}
+/* printInvoice removed: printing disabled — invoices must be exported */
 
 function exportInvoicePDF(id) {
   const invoice = invoices.find(inv => inv.id === id);
@@ -4796,8 +4728,14 @@ function emailInvoice(id) {
     return;
   }
   
-  // Crea un link mailto con i dettagli della fattura
-  const subject = `Fattura ${invoice.numero} - HB Termoimpianti`;
+  // Recupera informazioni mittente (configurabili) e costruisci mailto
+  const companyName = getStorage('companyName', 'HB Termoimpianti');
+  const companyAddress = getStorage('companyAddress', 'Via Trapione 16, Arco 38062 TN');
+  const companyVat = getStorage('companyVat', '');
+  const companyPhone = getStorage('companyPhone', '+39 06 1234567');
+  const companyEmail = getStorage('companyEmail', 'info@hbtermoimpianti.it');
+
+  const subject = `Fattura ${invoice.numero} - ${companyName}`;
   const body = `Gentile ${client.nome} ${client.cognome},
 
 In allegato trova la fattura ${invoice.numero} del ${formatDateIT(invoice.data)}.
@@ -4809,12 +4747,11 @@ Dettagli fattura:
 - Totale: ${currency(invoice.totale)}
 
 Cordiali saluti,
-HB Termoimpianti
+${companyName}
 
 ---
-HB Termoimpianti
-Tel: +39 06 1234567
-Email: info@hbtermoimpianti.it`;
+${companyName}
+${companyAddress ? companyAddress + '\n' : ''}${companyPhone ? 'Tel: ' + companyPhone + '\n' : ''}${companyEmail ? 'Email: ' + companyEmail : ''}`;
 
   const mailtoLink = `mailto:${client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   

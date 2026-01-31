@@ -404,12 +404,21 @@
         tbody.innerHTML = "";
         let subtotal = 0;
         let vatTotal = 0;
+        function parseRate(r){
+          if (r == null) return null;
+          if (typeof r === 'number') return r;
+          const s = String(r).trim().replace('%','').replace(',', '.').replace(/[^0-9.\-]/g,'');
+          const n = Number(s);
+          return Number.isFinite(n) ? n : null;
+        }
         (data.items || []).forEach((it) => {
           const tr = document.createElement("tr");
           const itemTotal = (it.qty || 0) * (it.unit || 0);
           subtotal += itemTotal;
-          const itemVatRate = typeof it.vat === 'number' ? it.vat : (typeof data.tax === 'number' ? data.tax : 10);
-          const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
+            const rawRate = (it.vat != null) ? it.vat : (data.tax != null ? data.tax : 10);
+            const parsedRate = parseRate(rawRate);
+            const itemVatRate = parsedRate != null ? parsedRate : (typeof data.tax === 'number' ? data.tax : 10);
+            const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
           vatTotal += itemVatAmount;
           tr.innerHTML =
             '<td class="desc">' +
@@ -425,9 +434,9 @@
             '<td class="unit right">' +
             formatCurrency(it.unit || 0) +
             "</td>" +
-            '<td class="iva">' +
-            (typeof it.vat === 'number' ? formatCurrency(itemVatAmount) : (it.vat || '')) +
-            "</td>" +
+              '<td class="iva">' +
+              formatCurrency(itemVatAmount) +
+              "</td>" +
             '<td class="total right">' +
             formatCurrency(itemTotal) +
             "</td>";
@@ -437,8 +446,10 @@
         const vatMap = {};
         (data.items || []).forEach((it) => {
           const itemTotal = (it.qty || 0) * (it.unit || 0);
-          const itemVatRate = typeof it.vat === 'number' ? it.vat : (typeof data.tax === 'number' ? data.tax : 10);
-          const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
+            const rawRate = (it.vat != null) ? it.vat : (data.tax != null ? data.tax : 10);
+            const parsedRate = parseRate(rawRate);
+            const itemVatRate = parsedRate != null ? parsedRate : (typeof data.tax === 'number' ? data.tax : 10);
+            const itemVatAmount = (itemTotal * (itemVatRate || 0)) / 100;
           const key = String(itemVatRate);
           if (!vatMap[key]) vatMap[key] = { base: 0, amount: 0 };
           vatMap[key].base += itemTotal;
@@ -448,14 +459,15 @@
         if (vatBody) {
           vatBody.innerHTML = '';
           // ordina le aliquote per valore decrescente
-          Object.keys(vatMap).sort((a,b)=>Number(b)-Number(a)).forEach(rateKey => {
-            const g = vatMap[rateKey];
-            const roundedAmount = Math.round(g.amount * 100) / 100;
-            const rounding = (roundedAmount - g.amount);
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>Aliquota ${rateKey}%</td><td class="center">${rateKey}</td><td class="right">${formatCurrency(g.base)}</td><td class="center">${rateKey}%</td><td class="right">${formatCurrency(g.amount)}</td><td class="right">${formatCurrency(rounding)}</td>`;
-            vatBody.appendChild(tr);
-          });
+            Object.keys(vatMap).sort((a,b)=>Number(b)-Number(a)).forEach(rateKey => {
+              const g = vatMap[rateKey];
+              const roundedAmount = Math.round(g.amount * 100) / 100;
+              const rounding = (roundedAmount - g.amount);
+              const displayRate = String(Number(rateKey));
+              const tr = document.createElement('tr');
+              tr.innerHTML = `<td>Aliquota ${displayRate}%</td><td class="center">${displayRate}</td><td class="right">${formatCurrency(g.base)}</td><td class="center">${displayRate}%</td><td class="right">${formatCurrency(g.amount)}</td><td class="right">${formatCurrency(rounding)}</td>`;
+              vatBody.appendChild(tr);
+            });
         }
         // usa vatTotal calcolata sulle righe, altrimenti fallback a data.tax (default 10%)
         const tax = vatTotal || (typeof data.tax === "number" ? (subtotal * data.tax) / 100 : (subtotal * 10) / 100);
