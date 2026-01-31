@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HB Termoimpianti</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#58a6ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HB Termoimpianti">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="HB Termoimpianti">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="img/logo.ico">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="152x152" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/logo.ico">
+  <link rel="apple-touch-icon" sizes="167x167" href="img/logo.ico">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Style -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Menu hamburger per mobile -->
+  <div class="mobile-menu-toggle" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+    <span class="menu-text">Menu</span>
+  </div>
+  
+  <!-- Menu dropdown mobile -->
+  <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
+    <div class="mobile-menu-item active" data-tab="dashboard">
+      <i class="fas fa-chart-line"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="clienti">
+      <i class="fas fa-users"></i>
+      <span>Clienti</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="materiali">
+      <i class="fas fa-tools"></i>
+      <span>Materiali</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="interventi">
+      <i class="fas fa-clipboard-list"></i>
+      <span>Interventi</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="preventivi">
+      <i class="fas fa-file-invoice-dollar"></i>
+      <span>Preventivi</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="calendario">
+      <i class="fas fa-calendar-alt"></i>
+      <span>Calendario</span>
+    </div>
+    <div class="mobile-menu-item" data-tab="fatture">
+      <i class="fas fa-file-invoice"></i>
+      <span>Fatture</span>
+    </div>
+  </div>
+
+  <!-- Menu normale per desktop/tablet -->
+  <nav class="tabs">
+    <div class="tab active" data-tab="dashboard">
+      <i class="fas fa-chart-line"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="tab" data-tab="clienti">
+      <i class="fas fa-users"></i>
+      <span>Clienti</span>
+    </div>
+    <div class="tab" data-tab="materiali">
+      <i class="fas fa-tools"></i>
+      <span>Materiali</span>
+    </div>
+    <div class="tab" data-tab="interventi">
+      <i class="fas fa-clipboard-list"></i>
+      <span>Interventi</span>
+    </div>
+    <div class="tab" data-tab="preventivi">
+      <i class="fas fa-file-invoice-dollar"></i>
+      <span>Preventivi</span>
+    </div>
+    <div class="tab" data-tab="calendario">
+      <i class="fas fa-calendar-alt"></i>
+      <span>Calendario</span>
+    </div>
+    <div class="tab" data-tab="fatture">
+      <i class="fas fa-file-invoice"></i>
+      <span>Fatture</span>
+    </div>
+  </nav>
+
+  <main>
+    <div id="content"></div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-info">
+        <i class="fas fa-database"></i>
+        <span>Archiviazione locale - Nessun server richiesto</span>
+      </div>
+      <div class="footer-actions">
+        <button id="backupBtn" class="backup-button" title="Crea backup dei dati">
+          <i class="fas fa-download"></i>
+          <span>Backup</span>
+        </button>
+        <button id="restoreBtn" class="restore-button" title="Ripristina backup">
+          <i class="fas fa-upload"></i>
+          <span>Ripristina</span>
+        </button>
+        <button id="lockBtn" class="lock-button" title="Blocca/Sblocca applicazione">
+          <i class="fas fa-lock"></i>
+          <span id="lockBtnText">Blocca</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Input file nascosto per il ripristino backup -->
+  <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+
+  <!-- Modal per blocco/sblocco applicazione -->
+  <div id="lockModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="lockModalTitle">
+          <i class="fas fa-lock"></i>
+          <span id="lockModalTitleText">Blocca Applicazione</span>
+        </h2>
+      </div>
+      <div class="modal-body">
+        <p id="lockModalDescription">Inserisci una password per proteggere i tuoi dati. I dati verranno criptati con algoritmo AES-256.</p>
+        
+        <div class="form-group">
+          <label for="lockPassword">Password <span class="required">*</span></label>
+          <input type="password" id="lockPassword" placeholder="Minimo 4 caratteri" required>
+        </div>
+        
+        <div class="form-group" id="confirmPasswordGroup">
+          <label for="lockPasswordConfirm">Conferma Password <span class="required">*</span></label>
+          <input type="password" id="lockPasswordConfirm" placeholder="Ripeti la password" required>
+        </div>
+        
+        <div class="lock-warning" id="lockWarning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p><strong>Attenzione:</strong> Non dimenticare la password! Senza di essa non potrai più accedere ai tuoi dati.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="lockModalCancel">Annulla</button>
+        <button type="button" class="btn-primary" id="lockModalConfirm">
+          <i class="fas fa-lock"></i>
+          <span id="lockModalConfirmText">Blocca</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="fattura_pdf.js"></script>
+  <script src="app.js"></script>
+
+  <!-- html2canvas necessario per generate_invoice.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- generate invoice helper (usa jsPDF + html2canvas) -->
+  <script src="generate_invoice.js"></script>
+  
+
+</body>
+</html>

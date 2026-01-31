@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Preventivo - Template dinamico</title>
+    <style>
+      :root {
+        --bg: #fff;
+        --muted: #666;
+        --accent: #0b63ff;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      body {
+        background: #e9e9e9;
+        margin: 0;
+        padding: 28px;
+      }
+      #page-container {
+        width: 794px;
+        margin: 0 auto;
+        background: var(--bg);
+        padding: 36px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .seller {
+        max-width: 380px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .seller h2 {
+        margin: 0 0 6px;
+        font-size: 20px;
+        color: #17a2ff;
+      }
+      .seller img.logo {
+        width: 64px;
+        height: auto;
+        border-radius: 6px;
+      }
+      .meta {
+        text-align: right;
+      }
+      .meta .title {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      .meta div {
+        color: var(--muted);
+      }
+      .bill-to {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .client,
+      .quote-info {
+        width: 48%;
+      }
+      table.items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 22px;
+        font-size: 14px;
+      }
+      table.items thead th {
+        background: #efefef;
+        padding: 12px 10px;
+        text-align: right;
+        font-weight: 700;
+        border-bottom: 2px solid #e0e0e0;
+      }
+      table.items td,
+      table.items th {
+        padding: 10px;
+        border-bottom: 1px dashed #ddd;
+      }
+      table.items tbody tr:nth-child(even) {
+        background: #fafafa;
+      }
+      table.items tbody tr.section-row td {
+        background: #f2f2f2;
+        font-weight: 700;
+        border-top: 1px solid #e0e0e0;
+      }
+      table.items td.right {
+        text-align: right;
+      }
+      .totals {
+        margin-top: 12px;
+      }
+      .totals table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .totals td {
+        padding: 8px 10px;
+      }
+      .totals .label {
+        background: transparent;
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .totals .amount {
+        width: 180px;
+        text-align: right;
+        font-weight: 700;
+      }
+      .totals .final-row td {
+        background: #0099ff8a;
+        color: #000;
+        border-top: 0;
+        border-bottom: 0;
+      }
+      .totals .final-row .amount {
+        font-size: 18px;
+        color: #000;
+      }
+      .notes {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .conditions {
+        margin-top: 18px;
+        line-height: 1.45;
+        font-weight: 400;
+        font-size: 14px;
+        width: 50%;
+      }
+      .conditions h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+      .conditions .cond-line {
+        margin-top: 6px;
+        font-weight: 400;
+      }
+      .conditions .cond-small {
+        margin-top: 6px;
+        font-weight: 400;
+        font-size: 13px;
+      }
+      .signature {
+        margin-top: 42px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        font-size: 14px;
+      }
+      .sig-left {
+        width: 30%;
+        color: var(--muted);
+      }
+      .sig-center {
+        width: 40%;
+        text-align: center;
+        color: var(--muted);
+      }
+      .sig-right {
+        width: 30%;
+        text-align: right;
+      }
+      button {
+        padding: 8px 12px;
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .client-label {
+        margin-top: 8px;
+        text-align: right;
+        font-size: 13px;
+        white-space: pre-line;
+      }
+      .client-label .place {
+        display: block;
+        margin: 6px 0; /* stesso margine sopra/sotto */
+        font-size: 13px; /* stessa dimensione del resto */
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="page-container">
+      <header>
+        <div class="seller">
+          <img src="img/logo.jpg" alt="Logo" class="logo" />
+          <div>
+            <h2 id="seller_name">HB Termoimpianti</h2>
+            <div id="seller_owner" class="muted">Brayan Hernandez</div>
+            <div id="seller_vat" class="muted">A capo P.IVA 02625040221</div>
+            <div id="seller_address" class="muted">
+              Via Trapione 16, Arco 38062 TN
+            </div>
+            <div id="seller_contact" class="muted">
+              Tel 3452104515<br />Email:
+              <a
+                href="mailto:hbtermoimpianti@hotmail.com"
+                style="text-decoration: underline; color: inherit"
+                >hbtermoimpianti@hotmail.com</a
+              >
+            </div>
+          </div>
+        </div>
+        <div class="meta"></div>
+      </header>
+      <div class="bill-to">
+        <div class="client" style="width: 48%"></div>
+        <div
+          class="client-label-container"
+          style="width: 48%; text-align: right"
+        >
+          <div id="client_label" class="client-label">
+            Spett. Nome Cliente<br />Luogo<br />15:01:25
+          </div>
+        </div>
+      </div>
+
+      <table class="items" id="items_table">
+        <thead>
+          <tr>
+            <th>Descrizione</th>
+            <th style="width: 80px">Q.tà</th>
+            <th style="width: 120px">Prezzo unit.</th>
+            <th style="width: 120px">Totale</th>
+          </tr>
+        </thead>
+        <tbody id="items_body">
+          <!-- righe generate dinamicamente -->
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <table>
+          <tr class="final-row">
+            <td class="label">TOTALE IVA ESCLUSA</td>
+            <td class="amount" id="total">€ 0.00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="conditions">
+        <h3>CONDIZIONI GENERALI</h3>
+        <div class="cond-line">Validità offerta: 30 giorni data offerta</div>
+        <div class="cond-line">
+          Pagamenti: per avvio lavori e conferma materiale 50%<br />consegna
+          lavori 50%
+        </div>
+        <div class="cond-line">
+          Esclusi: IVA, eventuali lavori ad economia non contemplati in
+          preventivo verranno addebitati alle seguenti tariffe orarie: 35€
+        </div>
+        <div class="cond-line">operaio specializzato</div>
+      </div>
+
+      <div class="notes" id="notes">Note: Grazie per averci scelto.</div>
+
+      <div class="signature">
+        <div class="sig-left"><span class="sig-label">Data:</span> <span id="final_date">--/--/--</span></div>
+        <div class="sig-center">Firma per accettazione</div>
+        <div class="sig-right">Cordiali saluti,<br />HB Termoimpianti</div>
+      </div>
+    </div>
+
+    <script>
+      function formatCurrency(v) {
+        return (
+          Number(v || 0).toLocaleString("it-IT", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }) + " €"
+        );
+      }
+      function formatDateDDMMYY(value) {
+        try {
+          const d = new Date(value);
+          if (isNaN(d)) {
+            // try ISO-like yyyy-mm-dd
+            const parts = String(value).split(/[-T ]/)[0].split("-");
+            if (parts.length === 3) {
+              return `${parts[2].padStart(2, "0")}/${parts[1].padStart(2, "0")}/${String(parts[0]).slice(-2)}`;
+            }
+            return String(value);
+          }
+          const dd = String(d.getDate()).padStart(2, "0");
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const yy = String(d.getFullYear()).slice(-2);
+          return `${dd}/${mm}/${yy}`;
+        } catch (e) {
+          return value;
+        }
+      }
+
+      function populatePreventivo(data) {
+        document.getElementById("seller_name").textContent =
+          data.seller.name || "";
+        document.getElementById("seller_address").textContent =
+          data.seller.address || "";
+        document.getElementById("seller_vat").textContent =
+          data.seller.vat || "";
+        const elFinalDate = document.getElementById("final_date");
+        if (elFinalDate) elFinalDate.textContent = formatDateDDMMYY(
+          data.quote && data.quote.date ? data.quote.date : new Date(),
+        );
+        // costruisci la dicitura "Spett." a destra usando nome cliente, luogo e data
+        const clientLabelEl = document.getElementById("client_label");
+        if (clientLabelEl) {
+          if (data.client && data.client.label) {
+            clientLabelEl.innerHTML = (data.client.label || "").replace(
+              /\n/g,
+              "<br>",
+            );
+          } else {
+            const name =
+              data.client && (data.client.nome || data.client.name)
+                ? data.client.nome || data.client.name
+                : "";
+            const place =
+              data.client &&
+              (data.client.citta || data.client.city || data.client.address)
+                ? data.client.citta || data.client.city || data.client.address
+                : "";
+              const dateObj = data.quote && data.quote.date ? new Date(data.quote.date) : new Date();
+              const dateStr = formatDateDDMMYY(dateObj);
+              const weekday = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
+              clientLabelEl.innerHTML = `Spett. ${name}<br>${place}<div class="place">ARCO TN</div>${weekday} ${dateStr}`;
+          }
+        }
+        // validità e tempi non visualizzati nel template preventivi
+
+        const tbody = document.getElementById("items_body");
+        tbody.innerHTML = "";
+        let subtotal = 0;
+        (data.items || []).forEach((it) => {
+          const tr = document.createElement("tr");
+          const total = (it.qty || 0) * (it.unit || 0);
+          subtotal += total;
+          tr.innerHTML =
+            '<td class="desc">' +
+            (it.desc || "") +
+            "</td>" +
+            '<td class="right">' +
+            (it.qty || 0) +
+            "</td>" +
+            '<td class="right">' +
+            formatCurrency(it.unit || 0) +
+            "</td>" +
+            '<td class="right">' +
+            formatCurrency(total) +
+            "</td>";
+          tbody.appendChild(tr);
+        });
+        const tax =
+          typeof data.tax === "number" ? (subtotal * data.tax) / 100 : 0;
+        const total = subtotal + tax;
+        const elSubtotal = document.getElementById("subtotal");
+        if (elSubtotal) elSubtotal.textContent = formatCurrency(subtotal);
+        const elTax = document.getElementById("tax");
+        if (elTax) elTax.textContent = formatCurrency(tax);
+        const elTotal = document.getElementById("total");
+        if (elTotal) elTotal.textContent = formatCurrency(total);
+        document.getElementById("notes").textContent = data.notes || "";
+      }
+
+      try {
+        const stored = localStorage.getItem("preventivoData");
+        if (stored) populatePreventivo(JSON.parse(stored));
+      } catch (e) {}
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="generate_invoice.js"></script>
+  </body>
+</html>

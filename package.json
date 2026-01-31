@@ -1,0 +1,87 @@
+{
+  "name": "hb-impianti",
+  "version": "2.0.0",
+  "description": "Applicazione gestionale per HB Termoimpianti - Clienti, Interventi, Preventivi, Fatture",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "npx serve .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --win --mac"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tamburini-Christofer/HB_Impianti.git"
+  },
+  "keywords": ["pwa", "gestionale", "termoimpianti", "electron", "desktop"],
+  "author": "Tamburini Christofer",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Tamburini-Christofer/HB_Impianti/issues"
+  },
+  "homepage": "https://tamburini-christofer.github.io/HB_Impianti/Hb_home.html",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.hbtermoimpianti.app",
+    "productName": "HB Termoimpianti",
+    "copyright": "Copyright © 2026 Tamburini Christofer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "Hb_home.html",
+      "app.js",
+      "style.css",
+      "sw.js",
+      "manifest.json",
+      "img/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "img/logo.ico",
+      "artifactName": "HB-Termoimpianti-${version}-Windows.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "img/logo.ico",
+      "uninstallerIcon": "img/logo.ico",
+      "installerHeaderIcon": "img/logo.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HB Termoimpianti"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "img/logo.jpg",
+      "artifactName": "HB-Termoimpianti-${version}-Mac.${ext}",
+      "category": "public.app-category.business"
+    },
+    "dmg": {
+      "title": "HB Termoimpianti",
+      "icon": "img/logo.ico"
+    }
+  }
+}
